@@ -6,17 +6,33 @@
 
 #ifndef VULKAN_CORE_H
 #define VULKAN_CORE_H
+
+#endif //VULKAN_CORE_H
+
+#include <optional>
 #include <vector>
 
 #include "../graphics_core.h"
 #include "vulkan/vulkan_core.h"
 
-#endif //VULKAN_CORE_H
+#define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 namespace ProtoCADGraphics {
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool IsComplete() {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
     class VulkanAPI : public API {
     private:
-
         //validation layers
         VkInstance m_instance;
         VkInstanceCreateInfo m_createInfo;
@@ -37,11 +53,29 @@ namespace ProtoCADGraphics {
         void CreateValidationLayers();
         std::vector<const char*> GetRequiredExtensions();
 
-        //devices
+        //physical devices
         VkPhysicalDevice m_physicalDevice;
 
         int RateDeviceSuitability(VkPhysicalDevice device);
+
         void PickPhysicalDevice();
+
+        //logical devices
+        VkDevice m_device;
+
+        void CreateLogicalDevice();
+
+        //queue
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+        bool IsDeviceSuitable(VkPhysicalDevice device);
+
+        VkQueue m_graphicsQueue;
+        VkQueue m_presentQueue;
+
+
+        //surface KHR
+        VkSurfaceKHR m_surface;
+        void CreateSurface(ProtoCADCore::Window* window);
 
     public:
         void Initialize(ProtoCADCore::Window* window) override;
