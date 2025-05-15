@@ -112,10 +112,9 @@ namespace ProtoCADGraphics {
     }
 
     int VulkanAPI::RateDeviceSuitability(VkPhysicalDevice device) {
-        VkPhysicalDeviceProperties deviceProperties{};
-        vkGetPhysicalDeviceProperties(m_physicalDevice, &deviceProperties);
-
-        VkPhysicalDeviceFeatures deviceFeatures{};
+        VkPhysicalDeviceProperties deviceProperties;
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
         int score = 0;
@@ -136,16 +135,6 @@ namespace ProtoCADGraphics {
         return score;
     }
 
-    bool VulkanAPI::IsDeviceSuitable(VkPhysicalDevice device) {
-        VkPhysicalDeviceProperties deviceProperties;
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceProperties(device, &deviceProperties);
-        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-               deviceFeatures.geometryShader;
-    }
-
 
     void VulkanAPI::PickPhysicalDevice() {
         m_physicalDevice = VK_NULL_HANDLE;
@@ -159,10 +148,6 @@ namespace ProtoCADGraphics {
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-        if (m_physicalDevice == VK_NULL_HANDLE) {
-            ProtoCADCore::Logging::Error("failed to find a suitable GPU!");
-        }
-
         // Use an ordered map to automatically sort candidates by increasing score
         std::multimap<int, VkPhysicalDevice> candidates;
 
@@ -174,6 +159,13 @@ namespace ProtoCADGraphics {
         // Check if the best candidate is suitable at all
         if (candidates.rbegin()->first > 0) {
             m_physicalDevice = candidates.rbegin()->second;
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(m_physicalDevice, &deviceProperties);
+
+            ProtoCADCore::Logging::Log("picked device: " + std::string(deviceProperties.deviceName));
+            ProtoCADCore::Logging::Log("picked device api version: " + std::to_string(deviceProperties.apiVersion));
+            ProtoCADCore::Logging::Log("picked device type: " + std::to_string(deviceProperties.deviceType));
+
         } else {
             ProtoCADCore::Logging::Error("failed to find a suitable GPU!");
         }
@@ -244,6 +236,7 @@ namespace ProtoCADGraphics {
         }
 
         CreateValidationLayers();
+        PickPhysicalDevice();
     }
 
     void VulkanAPI::CleanUp() {

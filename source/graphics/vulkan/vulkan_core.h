@@ -41,8 +41,6 @@ namespace ProtoCADGraphics {
         VkPhysicalDevice m_physicalDevice;
 
         int RateDeviceSuitability(VkPhysicalDevice device);
-
-        bool IsDeviceSuitable(VkPhysicalDevice device);
         void PickPhysicalDevice();
 
     public:
