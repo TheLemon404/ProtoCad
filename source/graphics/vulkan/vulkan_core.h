@@ -6,6 +6,7 @@
 
 #ifndef VULKAN_CORE_H
 #define VULKAN_CORE_H
+#include "vulkan_pipeline.h"
 
 #endif //VULKAN_CORE_H
 
@@ -46,6 +47,8 @@ namespace ProtoCADGraphics {
         VkInstanceCreateInfo m_createInfo;
         VkDebugUtilsMessengerEXT m_debugMessenger;
         VkDebugUtilsMessengerCreateInfoEXT m_messageCreateInfo;
+
+        std::shared_ptr<VulkanPipeline> m_pipeline;
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"
@@ -107,9 +110,6 @@ namespace ProtoCADGraphics {
         std::vector<VkImageView> m_swapChainImageViews;
 
         void CreateImageViews();
-
-        //pipeline
-        void CreateGraphicsPipeline();
 
     public:
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window) override;

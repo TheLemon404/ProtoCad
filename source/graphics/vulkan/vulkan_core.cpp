@@ -437,11 +437,6 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void VulkanAPI::CreateGraphicsPipeline() {
-
-    }
-
-
     void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window) {
         p_window = window->GetGLFWWindow();
         VkApplicationInfo appInfo = {};
@@ -513,10 +508,13 @@ namespace ProtoCADGraphics {
         CreateLogicalDevice();
         CreateSwapChain();
         CreateImageViews();
-        CreateGraphicsPipeline();
+
+        m_pipeline = std::make_shared<VulkanPipeline>(m_device);
     }
 
     void VulkanAPI::CleanUp() {
+        m_pipeline->CleanUp();
+
         for (auto imageView : m_swapChainImageViews) {
             vkDestroyImageView(m_device, imageView, nullptr);
         }
