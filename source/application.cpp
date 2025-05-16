@@ -22,6 +22,7 @@ void Application::Run() {
     Logging::Log("running application");
     while (!window->ShouldClose()) {
         window->Poll();
+        graphics_instance->DrawFrame();
     }
 
     graphics_instance->CleanUp();

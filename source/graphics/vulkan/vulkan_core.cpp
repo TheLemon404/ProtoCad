@@ -54,8 +54,9 @@ namespace ProtoCADGraphics {
             m_createInfo.pNext = nullptr;
         }
 
-        if (vkCreateInstance(&m_createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            ProtoCADCore::Logging::Error("failed to create instance!");
+        int result = vkCreateInstance(&m_createInfo, nullptr, &m_instance);
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to create instance wresultith error code: " + std::to_string(result));
         }
     }
 
@@ -411,6 +412,31 @@ namespace ProtoCADGraphics {
         m_swapChainExtent = extent;
     }
 
+    void VulkanAPI::CleanUpSwapChain() {
+        for (size_t i = 0; i < m_swapChainFramebuffers.size(); i++) {
+            vkDestroyFramebuffer(m_device, m_swapChainFramebuffers[i], nullptr);
+        }
+        for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            if (m_swapChainImageViews[i] != VK_NULL_HANDLE) {
+                vkDestroyImageView(m_device, m_swapChainImageViews[i], nullptr);
+            }
+        }
+
+        if (m_swapChain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+        }
+    }
+
+    void VulkanAPI::ReCreateSwapChain() {
+        vkDeviceWaitIdle(m_device);
+
+        CleanUpSwapChain();
+
+        CreateSwapChain();
+        CreateImageViews();
+        CreateFrameBuffers();
+    }
+
     void VulkanAPI::CreateImageViews() {
         m_swapChainImageViews.resize(m_swapChainImages.size());
 
@@ -436,6 +462,104 @@ namespace ProtoCADGraphics {
             }
         }
     }
+
+    void VulkanAPI::CreateFrameBuffers() {
+        m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
+
+        for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            VkImageView attachments[] = {
+                m_swapChainImageViews[i]
+            };
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = m_currentPipeline->GetRenderPass();
+            framebufferInfo.attachmentCount = 1;
+            framebufferInfo.pAttachments = attachments;
+            framebufferInfo.width = m_swapChainExtent.width;
+            framebufferInfo.height = m_swapChainExtent.height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_swapChainFramebuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+    }
+
+    void VulkanAPI::CreateCommandBuffers() {
+        m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = (uint32_t) m_commandBuffers.size();
+
+        int commandBuffer_result = vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data());
+        if (commandBuffer_result != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate command buffers with error code: " + std::to_string(commandBuffer_result));
+        }
+    }
+
+    void VulkanAPI::CreateCommandPool() {
+        QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_physicalDevice);
+
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+        int result = vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to create command pool with error code: " + std::to_string(result));
+        }
+    }
+
+    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0; // Optional
+        beginInfo.pInheritanceInfo = nullptr; // Optional
+
+        int result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer with error code: " + std::to_string(result));
+        }
+
+        m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer);
+
+        int record_result = vkEndCommandBuffer(commandBuffer);
+        if (record_result != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer with error code: " + std::to_string(record_result));
+        }
+    }
+
+    void VulkanAPI::CreateSyncObjects() {
+        m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            int result = vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]);
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error("failed to create synchronization objects for a frame with error code: " + std::to_string(result));
+            }
+        }
+    }
+
+    void VulkanAPI::HandleWindowResize() {
+        frameBufferResized = true;
+    }
+
 
     void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window) {
         p_window = window->GetGLFWWindow();
@@ -508,12 +632,90 @@ namespace ProtoCADGraphics {
         CreateLogicalDevice();
         CreateSwapChain();
         CreateImageViews();
+        m_currentPipeline = std::make_shared<UnlitVulkanPipeline>(m_device, m_swapChainExtent, m_swapChainImageFormat);
+        CreateFrameBuffers();
+        CreateCommandPool();
+        CreateCommandBuffers();
+        CreateSyncObjects();
+    }
 
-        m_pipeline = std::make_shared<VulkanPipeline>(m_device);
+    void VulkanAPI::DrawFrame() {
+        vkWaitForFences(m_device, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+        uint32_t imageIndex;
+        VkResult swapChainOutOfDateResult = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+        if (swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR) {
+            ReCreateSwapChain();
+            return;
+        } else if (swapChainOutOfDateResult != VK_SUCCESS && swapChainOutOfDateResult != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
+
+        vkResetFences(m_device, 1, &m_inFlightFences[currentFrame]);
+        vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
+        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex);
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        VkSemaphore waitSemaphores[] = {m_imageAvailableSemaphores[currentFrame]};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_commandBuffers[currentFrame];
+
+        VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[currentFrame]};
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+
+        int queueSubmit_result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[currentFrame]);
+        if (queueSubmit_result != VK_SUCCESS) {
+            throw std::runtime_error("failed to submit draw command buffer with error code: " + std::to_string(queueSubmit_result));
+        }
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores;
+
+        VkSwapchainKHR swapChains[] = {m_swapChain};
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+        presentInfo.pImageIndices = &imageIndex;
+
+        presentInfo.pResults = nullptr; // Optional
+        vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+        if (swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainOutOfDateResult == VK_SUBOPTIMAL_KHR || frameBufferResized) {
+            frameBufferResized = false;
+            ReCreateSwapChain();
+        }
+        else if (swapChainOutOfDateResult != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to present swap chain image!");
+        }
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     void VulkanAPI::CleanUp() {
-        m_pipeline->CleanUp();
+        CleanUpSwapChain();
+
+        m_currentPipeline->CleanUp();
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+        }
+
+        vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+        for (auto framebuffer : m_swapChainFramebuffers) {
+            vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+        }
 
         for (auto imageView : m_swapChainImageViews) {
             vkDestroyImageView(m_device, imageView, nullptr);
@@ -523,8 +725,8 @@ namespace ProtoCADGraphics {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
 
-        vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
         vkDestroyDevice(m_device, nullptr);
+
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
     }

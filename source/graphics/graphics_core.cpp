@@ -24,6 +24,10 @@ namespace ProtoCADGraphics {
         m_currentAPI->Initialize(window);
     }
 
+    void GraphicsInstance::DrawFrame() {
+        m_currentAPI->DrawFrame();
+    }
+
     void GraphicsInstance::CleanUp() {
         ProtoCADCore::Logging::Log("cleaning up graphics");
         m_currentAPI->CleanUp();

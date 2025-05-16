@@ -38,9 +38,12 @@ namespace ProtoCADGraphics {
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    class VulkanAPI : public API {
+    class VulkanAPI : public GraphicsAPI {
     private:
         GLFWwindow* p_window;
+
+        const int MAX_FRAMES_IN_FLIGHT = 2;
+        uint32_t currentFrame = 0;
 
         //validation layers
         VkInstance m_instance;
@@ -48,7 +51,9 @@ namespace ProtoCADGraphics {
         VkDebugUtilsMessengerEXT m_debugMessenger;
         VkDebugUtilsMessengerCreateInfoEXT m_messageCreateInfo;
 
-        std::shared_ptr<VulkanPipeline> m_pipeline;
+        std::shared_ptr<VulkanPipeline> m_currentPipeline;
+
+        std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"
@@ -105,14 +110,35 @@ namespace ProtoCADGraphics {
         VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
         void CreateSwapChain();
+        void CleanUpSwapChain();
+        void ReCreateSwapChain();
 
         //image views
         std::vector<VkImageView> m_swapChainImageViews;
 
         void CreateImageViews();
 
+        //framebuffers
+        void CreateFrameBuffers();
+
+        //command pools
+        VkCommandPool m_commandPool;
+        std::vector<VkCommandBuffer> m_commandBuffers;
+        void CreateCommandPool();
+        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        void CreateCommandBuffers();
+
+        //syncronization
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+        std::vector<VkFence> m_inFlightFences;
+        bool frameBufferResized = false;
+        void CreateSyncObjects();
+
     public:
+        void HandleWindowResize() override;
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window) override;
+        void DrawFrame() override;
         void CleanUp() override;
     };
 }

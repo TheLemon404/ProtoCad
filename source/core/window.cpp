@@ -21,15 +21,24 @@ namespace ProtoCADCore {
         std::cerr << "GLFW Error " << code << ": " << description << std::endl;
     }
 
+    void Window::GlfwWindowResizedCallback(GLFWwindow *window, int width, int height) {
+        auto win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    }
+
+
     void Window::Initialize() {
         Logging::Log("opening window");
         glfwInit();
+
         glfwSetErrorCallback(Window::GlfwErrorCallback);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title, NULL, NULL);
+        glfwSetWindowUserPointer(m_glfwWindow, this);
+        glfwSetWindowSizeCallback(m_glfwWindow, GlfwWindowResizedCallback);
+
         glfwMakeContextCurrent(m_glfwWindow);
 
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);

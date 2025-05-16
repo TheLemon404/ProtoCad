@@ -18,9 +18,11 @@ namespace ProtoCADGraphics {
         VULKAN,
     };
 
-    class API {
+    class GraphicsAPI {
     public:
+        virtual void HandleWindowResize() = 0;
         virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window) = 0;
+        virtual void DrawFrame() = 0;
         virtual void CleanUp() = 0;
     };
 
@@ -28,12 +30,13 @@ namespace ProtoCADGraphics {
     {
     private:
         GraphicsAPIType m_API;
-        std::shared_ptr<API> m_currentAPI;
+        std::shared_ptr<GraphicsAPI> m_currentAPI;
 
     public:
         GraphicsInstance(GraphicsAPIType API);
 
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
+        void DrawFrame();
         void CleanUp();
     };
 }
