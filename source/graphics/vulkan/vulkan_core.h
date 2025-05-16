@@ -103,6 +103,14 @@ namespace ProtoCADGraphics {
 
         void CreateSwapChain();
 
+        //image views
+        std::vector<VkImageView> m_swapChainImageViews;
+
+        void CreateImageViews();
+
+        //pipeline
+        void CreateGraphicsPipeline();
+
     public:
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window) override;
         void CleanUp() override;

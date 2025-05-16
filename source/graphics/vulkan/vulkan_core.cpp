@@ -86,8 +86,9 @@ namespace ProtoCADGraphics {
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         PopulateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-            ProtoCADCore::Logging::Error("failed to set up debug messenger!");
+        int result = CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger);
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to set up debug messenger with error code: " + std::to_string(result));
         }
     }
 
@@ -224,8 +225,9 @@ namespace ProtoCADGraphics {
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
-            ProtoCADCore::Logging::Error("failed to create logical device!");
+        int result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device);
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to create logical device with error code: " + std::to_string(result));
         }
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
@@ -392,7 +394,6 @@ namespace ProtoCADGraphics {
         createInfo.oldSwapchain = oldSwapchain;
 
         int result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain);
-
         if (result != VK_SUCCESS) {
             ProtoCADCore::Logging::Error("failed to create swap chain with code: " + std::to_string(result));
         }
@@ -408,6 +409,36 @@ namespace ProtoCADGraphics {
 
         m_swapChainImageFormat = surfaceFormat.format;
         m_swapChainExtent = extent;
+    }
+
+    void VulkanAPI::CreateImageViews() {
+        m_swapChainImageViews.resize(m_swapChainImages.size());
+
+        for (size_t i = 0; i < m_swapChainImages.size(); i++) {
+            VkImageViewCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            createInfo.image = m_swapChainImages[i];
+            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            createInfo.format = m_swapChainImageFormat;
+            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            createInfo.subresourceRange.baseMipLevel = 0;
+            createInfo.subresourceRange.levelCount = 1;
+            createInfo.subresourceRange.baseArrayLayer = 0;
+            createInfo.subresourceRange.layerCount = 1;
+
+            int result = vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]);
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error("failed to create image views with error: " + std::to_string(result));
+            }
+        }
+    }
+
+    void VulkanAPI::CreateGraphicsPipeline() {
+
     }
 
 
@@ -430,8 +461,8 @@ namespace ProtoCADGraphics {
         m_createInfo.enabledLayerCount = 0;
 
         VkResult result = vkCreateInstance(&m_createInfo, nullptr, &m_instance);
-        if (vkCreateInstance(&m_createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            ProtoCADCore::Logging::Error("failed to create instance!");
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to create instance with error code: " + std::to_string(result));
         }
 
         std::vector<const char*> requiredExtensions;
@@ -447,8 +478,9 @@ namespace ProtoCADGraphics {
         m_createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
         m_createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
-        if (vkCreateInstance(&m_createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-            ProtoCADCore::Logging::Error("failed to create instance!");
+        int result_instance = vkCreateInstance(&m_createInfo, nullptr, &m_instance);
+        if (result_instance != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to create instance with error code: " + std::to_string(result_instance));
         }
 
         uint32_t extensionCount = 0;
@@ -480,9 +512,15 @@ namespace ProtoCADGraphics {
         PickPhysicalDevice();
         CreateLogicalDevice();
         CreateSwapChain();
+        CreateImageViews();
+        CreateGraphicsPipeline();
     }
 
     void VulkanAPI::CleanUp() {
+        for (auto imageView : m_swapChainImageViews) {
+            vkDestroyImageView(m_device, imageView, nullptr);
+        }
+
         if (m_enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
