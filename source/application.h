@@ -6,6 +6,8 @@
 
 #ifndef APPLICATION_H
 #define APPLICATION_H
+#include <memory>
+
 #include "core/window.h"
 #include "graphics/graphics_core.h"
 
@@ -16,8 +18,8 @@ using ProtoCADGraphics::GraphicsInstance;
 
 class Application {
 public:
-    GraphicsInstance* graphics_instance;
-    Window* window;
+    std::shared_ptr<GraphicsInstance> graphics_instance;
+    std::shared_ptr<Window> window;
 
     Application();
 

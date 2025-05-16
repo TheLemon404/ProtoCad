@@ -6,6 +6,8 @@
 
 #ifndef GRAPHICS_CORE_H
 #define GRAPHICS_CORE_H
+#include <memory>
+
 #include "../core/window.h"
 
 #endif //GRAPHICS_CORE_H
@@ -18,7 +20,7 @@ namespace ProtoCADGraphics {
 
     class API {
     public:
-        virtual void Initialize(ProtoCADCore::Window* window) = 0;
+        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window) = 0;
         virtual void CleanUp() = 0;
     };
 
@@ -26,12 +28,12 @@ namespace ProtoCADGraphics {
     {
     private:
         GraphicsAPIType m_API;
-        API* m_currentAPI;
+        std::shared_ptr<API> m_currentAPI;
 
     public:
         GraphicsInstance(GraphicsAPIType API);
 
-        void Initialize(ProtoCADCore::Window* window);
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
         void CleanUp();
     };
 }

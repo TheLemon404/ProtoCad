@@ -31,8 +31,16 @@ namespace ProtoCADGraphics {
         }
     };
 
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
     class VulkanAPI : public API {
     private:
+        GLFWwindow* p_window;
+
         //validation layers
         VkInstance m_instance;
         VkInstanceCreateInfo m_createInfo;
@@ -57,11 +65,16 @@ namespace ProtoCADGraphics {
         VkPhysicalDevice m_physicalDevice;
 
         int RateDeviceSuitability(VkPhysicalDevice device);
+        bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
         void PickPhysicalDevice();
 
         //logical devices
         VkDevice m_device;
+
+        const std::vector<const char*> deviceExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
 
         void CreateLogicalDevice();
 
@@ -75,10 +88,23 @@ namespace ProtoCADGraphics {
 
         //surface KHR
         VkSurfaceKHR m_surface;
-        void CreateSurface(ProtoCADCore::Window* window);
+        void CreateSurface(std::shared_ptr<ProtoCADCore::Window> window);
+
+        //swap chain
+        VkSwapchainKHR m_swapChain;
+        std::vector<VkImage> m_swapChainImages;
+        VkFormat m_swapChainImageFormat;
+        VkExtent2D m_swapChainExtent;
+
+        SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+        void CreateSwapChain();
 
     public:
-        void Initialize(ProtoCADCore::Window* window) override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window) override;
         void CleanUp() override;
     };
 }

@@ -8,8 +8,8 @@
 using ProtoCADCore::Logging;
 
 Application::Application() {
-    window = new ProtoCADCore::Window("ProtoCAD", 800, 600);
-    graphics_instance = new GraphicsInstance(ProtoCADGraphics::VULKAN);
+    window = std::make_shared<Window>("ProtoCAD", 800, 600);
+    graphics_instance = std::make_shared<GraphicsInstance>(ProtoCADGraphics::VULKAN);
 }
 
 void Application::Initialize() {

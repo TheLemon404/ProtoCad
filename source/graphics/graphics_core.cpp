@@ -14,10 +14,10 @@ namespace ProtoCADGraphics {
         m_currentAPI = nullptr;
     }
 
-    void GraphicsInstance::Initialize(ProtoCADCore::Window* window) {
+    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window) {
         switch (m_API) {
             case VULKAN:
-                m_currentAPI = new VulkanAPI();
+                m_currentAPI = std::make_shared<VulkanAPI>();
                 ProtoCADCore::Logging::Log("creating vulkan API instance");
         }
 
