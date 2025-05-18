@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "vulkan/vulkan_core.h"
+#include "../graphics_objects.h"
 
 namespace ProtoCADGraphics {
     class VulkanPipeline {
@@ -35,7 +36,9 @@ namespace ProtoCADGraphics {
 
         VulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, const char* vertexShaderPath, const char* fragmentShaderPath);
 
-        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer);
+        VkPipeline GetPipeline() { return m_graphicsPipeline; }
+
+        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, std::vector<Vertex> vertices);
         void CleanUp();
     };
 

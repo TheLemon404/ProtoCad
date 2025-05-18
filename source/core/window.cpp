@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "logging.h"
+#include "input.h"
 
 namespace ProtoCADCore {
     Window::Window(const char* title, unsigned int width, unsigned int height) {
@@ -38,6 +39,14 @@ namespace ProtoCADCore {
         m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title, NULL, NULL);
         glfwSetWindowUserPointer(m_glfwWindow, this);
         glfwSetWindowSizeCallback(m_glfwWindow, GlfwWindowResizedCallback);
+
+        //input callbacks
+        Input::Initialize();
+
+        glfwSetKeyCallback(m_glfwWindow, Input::GLFWKeyCallback);
+        glfwSetMouseButtonCallback(m_glfwWindow, Input::GLFWMouseButtonCallback);
+        glfwSetScrollCallback(m_glfwWindow, Input::GLFWScrollCallback);
+        glfwSetCursorPosCallback(m_glfwWindow, Input::GLFWSetCursorPosCallback);
 
         glfwMakeContextCurrent(m_glfwWindow);
 

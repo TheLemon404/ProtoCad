@@ -7,6 +7,7 @@
 #ifndef VULKAN_CORE_H
 #define VULKAN_CORE_H
 #include "vulkan_pipeline.h"
+#include "../graphics_objects.h"
 
 #endif //VULKAN_CORE_H
 
@@ -125,7 +126,7 @@ namespace ProtoCADGraphics {
         VkCommandPool m_commandPool;
         std::vector<VkCommandBuffer> m_commandBuffers;
         void CreateCommandPool();
-        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices);
         void CreateCommandBuffers();
 
         //syncronization
@@ -135,10 +136,26 @@ namespace ProtoCADGraphics {
         bool frameBufferResized = false;
         void CreateSyncObjects();
 
+        //vertex buffers
+        VkBuffer m_vertexBuffer;
+        VkDeviceMemory m_vertexBufferMemory;
+
+        uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        void CreateVertexBuffer(std::vector<Vertex> vertices);
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+        void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    public:
+        void UpdateVertexBuffer(std::vector<Vertex> vertices);
+
     public:
         void HandleWindowResize() override;
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window) override;
-        void DrawFrame() override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) override;
+        void DrawFrame(std::vector<Vertex> vertices) override;
         void CleanUp() override;
+
+        //vertex_handling
+        static VkVertexInputBindingDescription GetBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions();
     };
 }

@@ -10,6 +10,7 @@
 
 #include "core/window.h"
 #include "graphics/graphics_core.h"
+#include "graphics/graphics_objects.h"
 
 using ProtoCADCore::Window;
 using ProtoCADGraphics::GraphicsInstance;
@@ -20,6 +21,12 @@ class Application {
 public:
     std::shared_ptr<GraphicsInstance> graphics_instance;
     std::shared_ptr<Window> window;
+
+    std::vector<ProtoCADGraphics::Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
 
     Application();
 

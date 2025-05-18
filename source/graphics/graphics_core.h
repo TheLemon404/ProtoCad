@@ -7,10 +7,13 @@
 #ifndef GRAPHICS_CORE_H
 #define GRAPHICS_CORE_H
 #include <memory>
+#include <vector>
 
 #include "../core/window.h"
 
 #endif //GRAPHICS_CORE_H
+
+#include "graphics_objects.h"
 
 namespace ProtoCADGraphics {
     enum GraphicsAPIType
@@ -21,8 +24,8 @@ namespace ProtoCADGraphics {
     class GraphicsAPI {
     public:
         virtual void HandleWindowResize() = 0;
-        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window) = 0;
-        virtual void DrawFrame() = 0;
+        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) = 0;
+        virtual void DrawFrame(std::vector<Vertex> vertices) = 0;
         virtual void CleanUp() = 0;
     };
 
@@ -35,8 +38,9 @@ namespace ProtoCADGraphics {
     public:
         GraphicsInstance(GraphicsAPIType API);
 
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
-        void DrawFrame();
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices);
+        void DrawFrame(std::vector<Vertex> vertices);
         void CleanUp();
+        void UpdateVertexBuffer(std::vector<Vertex> vertices);
     };
 }

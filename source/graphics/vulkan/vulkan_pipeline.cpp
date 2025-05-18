@@ -4,6 +4,7 @@
 
 #include "vulkan_pipeline.h"
 
+#include "vulkan_core.h"
 #include "../../core/io.h"
 
 namespace ProtoCADGraphics {
@@ -56,10 +57,14 @@ namespace ProtoCADGraphics {
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+        auto bindingDescription = VulkanAPI::GetBindingDescription();
+        auto attributeDescriptions = VulkanAPI::GetAttributeDescriptions();
+
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -210,7 +215,7 @@ namespace ProtoCADGraphics {
         renderPassInfo.pDependencies = &dependency;
     }
 
-    void VulkanPipeline::BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer) {
+    void VulkanPipeline::BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, std::vector<Vertex> vertices) {
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = m_renderPass;
@@ -235,7 +240,12 @@ namespace ProtoCADGraphics {
         scissor.offset = {0, 0};
         scissor.extent = swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+        VkBuffer vertexBuffers[] = {vertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+        vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
     }
 
