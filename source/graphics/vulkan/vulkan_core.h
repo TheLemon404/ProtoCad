@@ -126,7 +126,7 @@ namespace ProtoCADGraphics {
         VkCommandPool m_commandPool;
         std::vector<VkCommandBuffer> m_commandBuffers;
         void CreateCommandPool();
-        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices);
+        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices, std::vector<uint32_t> indices);
         void CreateCommandBuffers();
 
         //syncronization
@@ -138,10 +138,13 @@ namespace ProtoCADGraphics {
 
         //vertex buffers
         VkBuffer m_vertexBuffer;
+        VkBuffer m_indexBuffer;
         VkDeviceMemory m_vertexBufferMemory;
+        VkDeviceMemory m_indexBufferMemory;
 
         uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
         void CreateVertexBuffer(std::vector<Vertex> vertices);
+        void CreateIndexBuffer(std::vector<uint32_t> indices);
         void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -150,8 +153,8 @@ namespace ProtoCADGraphics {
 
     public:
         void HandleWindowResize() override;
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) override;
-        void DrawFrame(std::vector<Vertex> vertices) override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) override;
+        void DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) override;
         void CleanUp() override;
 
         //vertex_handling

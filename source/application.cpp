@@ -17,7 +17,7 @@ Application::Application() {
 void Application::Initialize() {
     Logging::Log("initializing application");
     window->Initialize();
-    graphics_instance->Initialize(window, vertices);
+    graphics_instance->Initialize(window, vertices, indices);
 }
 
 void Application::Run() {
@@ -30,7 +30,7 @@ void Application::Run() {
             graphics_instance->UpdateVertexBuffer(vertices);
             Logging::Log("key pressed");
         }
-        graphics_instance->DrawFrame(vertices);
+        graphics_instance->DrawFrame(vertices, indices);
     }
 
     graphics_instance->CleanUp();

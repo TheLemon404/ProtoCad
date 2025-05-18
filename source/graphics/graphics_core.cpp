@@ -14,14 +14,14 @@ namespace ProtoCADGraphics {
         m_currentAPI = nullptr;
     }
 
-    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) {
+    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
         switch (m_API) {
             case VULKAN:
                 m_currentAPI = std::make_shared<VulkanAPI>();
                 ProtoCADCore::Logging::Log("creating vulkan API instance");
         }
 
-        m_currentAPI->Initialize(window, vertices);
+        m_currentAPI->Initialize(window, vertices, indices);
     }
 
     void GraphicsInstance::UpdateVertexBuffer(std::vector<Vertex> vertices) {
@@ -29,8 +29,8 @@ namespace ProtoCADGraphics {
         vk->UpdateVertexBuffer(vertices);
     }
 
-    void GraphicsInstance::DrawFrame(std::vector<Vertex> vertices) {
-        m_currentAPI->DrawFrame(vertices);
+    void GraphicsInstance::DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+        m_currentAPI->DrawFrame(vertices, indices);
     }
 
     void GraphicsInstance::CleanUp() {

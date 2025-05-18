@@ -515,7 +515,7 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices) {
+    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0; // Optional
@@ -526,7 +526,7 @@ namespace ProtoCADGraphics {
             throw std::runtime_error("failed to begin recording command buffer with error code: " + std::to_string(result));
         }
 
-        m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer, m_vertexBuffer, vertices);
+        m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer, m_vertexBuffer, m_indexBuffer, vertices, indices);
 
         int record_result = vkEndCommandBuffer(commandBuffer);
         if (record_result != VK_SUCCESS) {
@@ -592,6 +592,27 @@ namespace ProtoCADGraphics {
         vkDestroyBuffer(m_device, stagingBuffer, nullptr);
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
+
+    void VulkanAPI::CreateIndexBuffer(std::vector<uint32_t> indices) {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), (size_t) bufferSize);
+        vkUnmapMemory(m_device, stagingBufferMemory);
+
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+
+        CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+
+        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+    }
+
 
     void VulkanAPI::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory) {
         VkBufferCreateInfo bufferInfo{};
@@ -674,7 +695,7 @@ namespace ProtoCADGraphics {
     }
 
 
-    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) {
+    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
         p_window = window->GetGLFWWindow();
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -749,11 +770,12 @@ namespace ProtoCADGraphics {
         CreateFrameBuffers();
         CreateCommandPool();
         CreateVertexBuffer(vertices);
+        CreateIndexBuffer(indices);
         CreateCommandBuffers();
         CreateSyncObjects();
     }
 
-    void VulkanAPI::DrawFrame(std::vector<Vertex> vertices) {
+    void VulkanAPI::DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
         vkWaitForFences(m_device, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -768,7 +790,7 @@ namespace ProtoCADGraphics {
 
         vkResetFences(m_device, 1, &m_inFlightFences[currentFrame]);
         vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
-        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex, vertices);
+        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex, vertices, indices);
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -819,6 +841,9 @@ namespace ProtoCADGraphics {
 
         vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
         vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+
+        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
 
         m_currentPipeline->CleanUp();
 

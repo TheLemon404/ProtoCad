@@ -38,7 +38,7 @@ namespace ProtoCADGraphics {
 
         VkPipeline GetPipeline() { return m_graphicsPipeline; }
 
-        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, std::vector<Vertex> vertices);
+        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<Vertex> vertices, std::vector<uint32_t> indices);
         void CleanUp();
     };
 

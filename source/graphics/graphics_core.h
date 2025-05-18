@@ -24,8 +24,8 @@ namespace ProtoCADGraphics {
     class GraphicsAPI {
     public:
         virtual void HandleWindowResize() = 0;
-        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices) = 0;
-        virtual void DrawFrame(std::vector<Vertex> vertices) = 0;
+        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) = 0;
+        virtual void DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) = 0;
         virtual void CleanUp() = 0;
     };
 
@@ -38,8 +38,8 @@ namespace ProtoCADGraphics {
     public:
         GraphicsInstance(GraphicsAPIType API);
 
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices);
-        void DrawFrame(std::vector<Vertex> vertices);
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+        void DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
         void CleanUp();
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
     };
