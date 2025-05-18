@@ -14,14 +14,33 @@ namespace ProtoCADGraphics {
         m_currentAPI = nullptr;
     }
 
-    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
         switch (m_API) {
             case VULKAN:
                 m_currentAPI = std::make_shared<VulkanAPI>();
                 ProtoCADCore::Logging::Log("creating vulkan API instance");
         }
 
-        m_currentAPI->Initialize(window, vertices, indices);
+        m_currentAPI->Initialize(window, mesh);
+    }
+
+    void GraphicsInstance::UpdateMesh(Mesh mesh, MeshUpdateType updateType) {
+        switch (updateType) {
+            case UPDATE_VERTEX_BUFFER:
+                UpdateVertexBuffer(mesh.vertices);
+                break;
+            case UPDATE_INDEX_BUFFER:
+                UpdateIndexBuffer(mesh.indices);
+                break;
+            case UPDATE_ALL_BUFFERS:
+                UpdateVertexBuffer(mesh.vertices);
+                UpdateIndexBuffer(mesh.indices);
+                break;
+            default:
+                UpdateVertexBuffer(mesh.vertices);
+                UpdateIndexBuffer(mesh.indices);
+                break;
+        }
     }
 
     void GraphicsInstance::UpdateVertexBuffer(std::vector<Vertex> vertices) {
@@ -29,8 +48,13 @@ namespace ProtoCADGraphics {
         vk->UpdateVertexBuffer(vertices);
     }
 
-    void GraphicsInstance::DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
-        m_currentAPI->DrawFrame(vertices, indices);
+    void GraphicsInstance::UpdateIndexBuffer(std::vector<uint32_t> indices) {
+        std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
+        vk->UpdateIndexBuffer(indices);
+    }
+
+    void GraphicsInstance::DrawFrame(Mesh mesh) {
+        m_currentAPI->DrawFrame(mesh);
     }
 
     void GraphicsInstance::CleanUp() {

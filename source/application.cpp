@@ -16,8 +16,9 @@ Application::Application() {
 
 void Application::Initialize() {
     Logging::Log("initializing application");
+    mesh = {vertices, indices};
     window->Initialize();
-    graphics_instance->Initialize(window, vertices, indices);
+    graphics_instance->Initialize(window, mesh);
 }
 
 void Application::Run() {
@@ -25,12 +26,12 @@ void Application::Run() {
 
     while (!window->ShouldClose()) {
         window->Poll();
-        if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && vertices[0].m_color.x == 1.0f) {
-            vertices[0] = {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}};
-            graphics_instance->UpdateVertexBuffer(vertices);
-            Logging::Log("key pressed");
+        if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && mesh.vertices[0].color.x == 1.0f) {
+            mesh.vertices[0] = {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}};
+            graphics_instance->UpdateMesh(mesh);
+            Logging::Warn("key pressed");
         }
-        graphics_instance->DrawFrame(vertices, indices);
+        graphics_instance->DrawFrame(mesh);
     }
 
     graphics_instance->CleanUp();

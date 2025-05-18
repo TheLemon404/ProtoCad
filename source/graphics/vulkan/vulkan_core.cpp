@@ -5,6 +5,7 @@
 #include "vulkan_core.h"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -13,6 +14,10 @@
 #include <vector>
 
 #include "../../core/logging.h"
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace ProtoCADGraphics {
     bool VulkanAPI::CheckValidationLayerSupport() {
@@ -515,7 +520,7 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0; // Optional
@@ -526,7 +531,7 @@ namespace ProtoCADGraphics {
             throw std::runtime_error("failed to begin recording command buffer with error code: " + std::to_string(result));
         }
 
-        m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer, m_vertexBuffer, m_indexBuffer, vertices, indices);
+        m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer, m_vertexBuffer, m_indexBuffer, mesh, m_descriptorSets, currentFrame);
 
         int record_result = vkEndCommandBuffer(commandBuffer);
         if (record_result != VK_SUCCESS) {
@@ -694,8 +699,125 @@ namespace ProtoCADGraphics {
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
+    void VulkanAPI::CreateDescriptorSetLayout() {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
-    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings = &uboLayoutBinding;
+
+        int result = vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout with error code: " + std::to_string(result));
+        }
+    }
+
+    void VulkanAPI::CreateUniformBuffers() {
+        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+        m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+
+            vkMapMemory(m_device, m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_uniformBuffersMapped[i]);
+        }
+    }
+
+    void VulkanAPI::CreateDescriptorPool() {
+        VkDescriptorPoolSize poolSize{};
+        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = 1;
+        poolInfo.pPoolSizes = &poolSize;
+        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+        int result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor pool with error code: " + std::to_string(result));
+        }
+    }
+
+    void VulkanAPI::CreateDescriptorSets() {
+        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = m_descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        allocInfo.pSetLayouts = layouts.data();
+
+        m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+        int result = vkAllocateDescriptorSets(m_device, &allocInfo, m_descriptorSets.data());
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate descriptor sets with error code: " + std::to_string(result));
+        }
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = m_uniformBuffers[i];
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBufferObject);
+
+            VkWriteDescriptorSet descriptorWrite{};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = m_descriptorSets[i];
+            descriptorWrite.dstBinding = 0;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pBufferInfo = &bufferInfo;
+            descriptorWrite.pImageInfo = nullptr; // Optional
+            descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+            vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr);
+        }
+    }
+
+    void VulkanAPI::UpdateUniformBuffer(uint32_t currentImage) {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.projection = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 10.0f);
+        ubo.projection[1][1] *= -1;
+
+        memcpy(m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+    }
+
+    void VulkanAPI::UpdateIndexBuffer(std::vector<uint32_t> indices) {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), (size_t)bufferSize);
+        vkUnmapMemory(m_device, stagingBufferMemory);
+
+        CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+
+        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+    }
+
+
+    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
         p_window = window->GetGLFWWindow();
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -766,16 +888,20 @@ namespace ProtoCADGraphics {
         CreateLogicalDevice();
         CreateSwapChain();
         CreateImageViews();
-        m_currentPipeline = std::make_shared<UnlitVulkanPipeline>(m_device, m_swapChainExtent, m_swapChainImageFormat);
+        CreateDescriptorSetLayout();
+        m_currentPipeline = std::make_shared<UnlitVulkanPipeline>(m_device, m_swapChainExtent, m_swapChainImageFormat, m_descriptorSetLayout);
         CreateFrameBuffers();
         CreateCommandPool();
-        CreateVertexBuffer(vertices);
-        CreateIndexBuffer(indices);
+        CreateVertexBuffer(mesh.vertices);
+        CreateIndexBuffer(mesh.indices);
+        CreateUniformBuffers();
+        CreateDescriptorPool();
+        CreateDescriptorSets();
         CreateCommandBuffers();
         CreateSyncObjects();
     }
 
-    void VulkanAPI::DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+    void VulkanAPI::DrawFrame(Mesh mesh) {
         vkWaitForFences(m_device, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -788,9 +914,12 @@ namespace ProtoCADGraphics {
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
+        UpdateUniformBuffer(currentFrame);
+
         vkResetFences(m_device, 1, &m_inFlightFences[currentFrame]);
         vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
-        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex, vertices, indices);
+        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex, mesh);
+
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -838,6 +967,16 @@ namespace ProtoCADGraphics {
 
     void VulkanAPI::CleanUp() {
         CleanUpSwapChain();
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkDestroyBuffer(m_device, m_uniformBuffers[i], nullptr);
+            vkFreeMemory(m_device, m_uniformBuffersMemory[i], nullptr);
+        }
+
+        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
 
         vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
         vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
@@ -889,12 +1028,12 @@ namespace ProtoCADGraphics {
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, m_position);
+        attributeDescriptions[0].offset = offsetof(Vertex, position);
 
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, m_color);
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
 
         return attributeDescriptions;
     }

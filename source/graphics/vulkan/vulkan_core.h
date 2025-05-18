@@ -126,7 +126,7 @@ namespace ProtoCADGraphics {
         VkCommandPool m_commandPool;
         std::vector<VkCommandBuffer> m_commandBuffers;
         void CreateCommandPool();
-        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh);
         void CreateCommandBuffers();
 
         //syncronization
@@ -148,13 +148,29 @@ namespace ProtoCADGraphics {
         void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
+        //descriptor sets
+        VkDescriptorSetLayout m_descriptorSetLayout;
+
+        std::vector<VkBuffer> m_uniformBuffers;
+        std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+        std::vector<void*> m_uniformBuffersMapped;
+        VkDescriptorPool m_descriptorPool;
+        std::vector<VkDescriptorSet> m_descriptorSets;
+
+        void CreateDescriptorSetLayout();
+        void CreateUniformBuffers();
+        void CreateDescriptorPool();
+        void CreateDescriptorSets();
+        void UpdateUniformBuffer(uint32_t currentImage);
+
     public:
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
+        void UpdateIndexBuffer(std::vector<uint32_t> indices);
 
     public:
         void HandleWindowResize() override;
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::vector<Vertex> vertices, std::vector<uint32_t> indices) override;
-        void DrawFrame(std::vector<Vertex> vertices, std::vector<uint32_t> indices) override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
+        void DrawFrame(Mesh mesh) override;
         void CleanUp() override;
 
         //vertex_handling

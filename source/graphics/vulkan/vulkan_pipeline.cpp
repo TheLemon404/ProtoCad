@@ -21,7 +21,7 @@ namespace ProtoCADGraphics {
         return shaderModule;
     }
 
-    VulkanPipeline::VulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, const char* vertexShaderPath, const char* fragmentShaderPath) {
+    VulkanPipeline::VulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, const char* vertexShaderPath, const char* fragmentShaderPath, VkDescriptorSetLayout descriptorSetLayout) {
         p_device = device;
         p_swapChainImageFormat = renderPassFormat;
 
@@ -97,7 +97,7 @@ namespace ProtoCADGraphics {
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
         rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
         rasterizer.depthBiasConstantFactor = 0.0f; // Optional
         rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -135,8 +135,8 @@ namespace ProtoCADGraphics {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0; // Optional
-        pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -215,7 +215,7 @@ namespace ProtoCADGraphics {
         renderPassInfo.pDependencies = &dependency;
     }
 
-    void VulkanPipeline::BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
+    void VulkanPipeline::BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, Mesh mesh, std::vector<VkDescriptorSet> descriptorSets, uint32_t currentFrame) {
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = m_renderPass;
@@ -246,7 +246,9 @@ namespace ProtoCADGraphics {
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
     }
 
@@ -261,10 +263,10 @@ namespace ProtoCADGraphics {
         vkDestroyShaderModule(p_device, m_vertShaderModule, nullptr);
     }
 
-    UnlitVulkanPipeline::UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv") {
+    UnlitVulkanPipeline::UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv", descriptorSetLayout) {
     }
 
-    LitVulkanPipeline::LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv") {
+    LitVulkanPipeline::LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv", descriptorSetLayout) {
     }
 
 }

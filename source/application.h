@@ -33,6 +33,8 @@ public:
         0, 1, 2, 2, 3, 0
     };
 
+    ProtoCADGraphics::Mesh mesh;
+
     Application();
 
     void Initialize();

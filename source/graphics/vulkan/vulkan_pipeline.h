@@ -34,21 +34,21 @@ namespace ProtoCADGraphics {
 
         VkRenderPass GetRenderPass() { return m_renderPass; }
 
-        VulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, const char* vertexShaderPath, const char* fragmentShaderPath);
+        VulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, const char* vertexShaderPath, const char* fragmentShaderPath, VkDescriptorSetLayout descriptorSetLayout);
 
         VkPipeline GetPipeline() { return m_graphicsPipeline; }
 
-        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+        void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, Mesh mesh, std::vector<VkDescriptorSet> descriptorSets, uint32_t currentFrame);
         void CleanUp();
     };
 
     class UnlitVulkanPipeline : public VulkanPipeline {
     public:
-        UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat);
+        UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout);
     };
 
     class LitVulkanPipeline : public VulkanPipeline {
     public:
-        LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat);
+        LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout);
     };
 }

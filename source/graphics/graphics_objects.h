@@ -10,12 +10,24 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
+#include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
 namespace ProtoCADGraphics {
     struct Vertex {
-        glm::vec2 m_position;
-        glm::vec3 m_color;
+        glm::vec2 position;
+        glm::vec3 color;
+    };
+
+    struct Mesh {
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+    };
+
+    struct UniformBufferObject {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 projection;
     };
 }
