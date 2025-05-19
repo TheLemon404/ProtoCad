@@ -19,6 +19,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../../scene/environment.h"
+
 namespace ProtoCADGraphics {
     bool VulkanAPI::CheckValidationLayerSupport() {
         uint32_t layerCount;
@@ -368,8 +370,6 @@ namespace ProtoCADGraphics {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
 
-        VkSwapchainKHR oldSwapchain = m_swapChain;
-
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = m_surface;
@@ -397,16 +397,11 @@ namespace ProtoCADGraphics {
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = oldSwapchain;
+        createInfo.oldSwapchain = VK_NULL_HANDLE;
 
         int result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain);
         if (result != VK_SUCCESS) {
             ProtoCADCore::Logging::Error("failed to create swap chain with code: " + std::to_string(result));
-        }
-
-        // Clean up old swapchain if needed
-        if (oldSwapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
         }
 
         vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
@@ -520,7 +515,7 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void VulkanAPI::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh) {
+    void VulkanAPI::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0; // Optional
@@ -532,6 +527,10 @@ namespace ProtoCADGraphics {
         }
 
         m_currentPipeline->BeingRenderPass(&m_swapChainFramebuffers[imageIndex], m_swapChainExtent, commandBuffer, m_vertexBuffer, m_indexBuffer, mesh, m_descriptorSets, currentFrame);
+    }
+
+    void VulkanAPI::EndRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+        m_currentPipeline->EndRenderPass(commandBuffer);
 
         int record_result = vkEndCommandBuffer(commandBuffer);
         if (record_result != VK_SUCCESS) {
@@ -540,9 +539,9 @@ namespace ProtoCADGraphics {
     }
 
     void VulkanAPI::CreateSyncObjects() {
-        m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -552,9 +551,9 @@ namespace ProtoCADGraphics {
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            int result = vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]);
+            int result = vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(m_device, &fenceInfo, nullptr, &inFlightFences[i]);
             if (result != VK_SUCCESS) {
                 throw std::runtime_error("failed to create synchronization objects for a frame with error code: " + std::to_string(result));
             }
@@ -579,11 +578,11 @@ namespace ProtoCADGraphics {
     }
 
     void VulkanAPI::CreateVertexBuffer(std::vector<Vertex> vertices) {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
-        CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
@@ -603,7 +602,7 @@ namespace ProtoCADGraphics {
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
-        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
@@ -684,6 +683,7 @@ namespace ProtoCADGraphics {
     void VulkanAPI::UpdateVertexBuffer(std::vector<Vertex> vertices) {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
+        //create staging buffer
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -692,6 +692,11 @@ namespace ProtoCADGraphics {
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, vertices.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
+
+        //recreate vertex buffer
+        vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
+        vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
 
         CopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
 
@@ -735,12 +740,14 @@ namespace ProtoCADGraphics {
     void VulkanAPI::CreateDescriptorPool() {
         VkDescriptorPoolSize poolSize{};
         poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        //multiply by 2 for IMGUI
+        poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = 1;
         poolInfo.pPoolSizes = &poolSize;
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
 
         int result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool);
         if (result != VK_SUCCESS) {
@@ -783,16 +790,16 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void VulkanAPI::UpdateUniformBuffer(uint32_t currentImage) {
+    void VulkanAPI::UpdateUniformBuffer(uint32_t currentImage, glm::mat4 transform, glm::mat4 view, float fov) {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.projection = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 10.0f);
+        ubo.model = transform;
+        ubo.view = view;
+        ubo.projection = glm::perspective(glm::radians(fov), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.001f, 10000.0f);
         ubo.projection[1][1] *= -1;
 
         memcpy(m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -809,6 +816,11 @@ namespace ProtoCADGraphics {
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, indices.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
+
+        //recreate index buffer
+        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
 
         CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
 
@@ -901,41 +913,52 @@ namespace ProtoCADGraphics {
         CreateSyncObjects();
     }
 
-    void VulkanAPI::DrawFrame(Mesh mesh) {
-        vkWaitForFences(m_device, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    void VulkanAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov) {
+        vkWaitForFences(m_device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-        uint32_t imageIndex;
-        VkResult swapChainOutOfDateResult = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+        t_swapChainOutOfDateResult = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &t_imageIndex);
 
-        if (swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR) {
+        if (t_swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR) {
             ReCreateSwapChain();
+            m_recreateSwapChainHalt = true;
             return;
-        } else if (swapChainOutOfDateResult != VK_SUCCESS && swapChainOutOfDateResult != VK_SUBOPTIMAL_KHR) {
+        } else if (t_swapChainOutOfDateResult != VK_SUCCESS && t_swapChainOutOfDateResult != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        UpdateUniformBuffer(currentFrame);
+        UpdateUniformBuffer(currentFrame, model.transform, view, fov);
 
-        vkResetFences(m_device, 1, &m_inFlightFences[currentFrame]);
+        vkResetFences(m_device, 1, &inFlightFences[currentFrame]);
         vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
-        RecordCommandBuffer(m_commandBuffers[currentFrame], imageIndex, mesh);
+        BeginRecordCommandBuffer(m_commandBuffers[currentFrame], t_imageIndex, model.mesh);
+    }
+
+    void VulkanAPI::EndDrawFrame() {
+        if (m_recreateSwapChainHalt) {
+            m_recreateSwapChainHalt = false;
+            return;
+        }
+        EndRecordCommandBuffer(m_commandBuffers[currentFrame], t_imageIndex);
+
+        std::array<VkCommandBuffer, 1> submitCommandBuffers =
+            { m_commandBuffers[currentFrame] };
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {m_imageAvailableSemaphores[currentFrame]};
+        VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_commandBuffers[currentFrame];
+        submitInfo.commandBufferCount = static_cast<uint32_t>(submitCommandBuffers.size());
+        submitInfo.pCommandBuffers = submitCommandBuffers.data();
 
-        VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[currentFrame]};
+        VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        int queueSubmit_result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[currentFrame]);
+        int queueSubmit_result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
         if (queueSubmit_result != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer with error code: " + std::to_string(queueSubmit_result));
         }
@@ -949,16 +972,16 @@ namespace ProtoCADGraphics {
         VkSwapchainKHR swapChains[] = {m_swapChain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
-        presentInfo.pImageIndices = &imageIndex;
+        presentInfo.pImageIndices = &t_imageIndex;
 
         presentInfo.pResults = nullptr; // Optional
         vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-        if (swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainOutOfDateResult == VK_SUBOPTIMAL_KHR || frameBufferResized) {
+        if (t_swapChainOutOfDateResult == VK_ERROR_OUT_OF_DATE_KHR || t_swapChainOutOfDateResult == VK_SUBOPTIMAL_KHR || frameBufferResized) {
             frameBufferResized = false;
             ReCreateSwapChain();
         }
-        else if (swapChainOutOfDateResult != VK_SUCCESS) {
+        else if (t_swapChainOutOfDateResult != VK_SUCCESS) {
             ProtoCADCore::Logging::Error("failed to present swap chain image!");
         }
 
@@ -987,20 +1010,12 @@ namespace ProtoCADGraphics {
         m_currentPipeline->CleanUp();
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+            vkDestroySemaphore(m_device, renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device, imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device, inFlightFences[i], nullptr);
         }
 
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
-
-        for (auto framebuffer : m_swapChainFramebuffers) {
-            vkDestroyFramebuffer(m_device, framebuffer, nullptr);
-        }
-
-        for (auto imageView : m_swapChainImageViews) {
-            vkDestroyImageView(m_device, imageView, nullptr);
-        }
 
         if (m_enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);

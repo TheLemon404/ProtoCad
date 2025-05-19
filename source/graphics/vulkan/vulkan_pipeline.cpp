@@ -199,7 +199,7 @@ namespace ProtoCADGraphics {
             throw std::runtime_error("failed to create graphics pipeline with error code: " + std::to_string(pipeline_result));
         }
 
-        m_clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
         VkSubpassDependency dependency{};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -223,7 +223,7 @@ namespace ProtoCADGraphics {
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChainExtent;
         renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &m_clearColor;
+        renderPassInfo.pClearValues = &clearColor;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
@@ -249,9 +249,11 @@ namespace ProtoCADGraphics {
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
-        vkCmdEndRenderPass(commandBuffer);
     }
 
+    void VulkanPipeline::EndRenderPass(VkCommandBuffer commandBuffer) {
+        vkCmdEndRenderPass(commandBuffer);
+    }
 
     void VulkanPipeline::CleanUp() {
         vkDestroyPipeline(p_device, m_graphicsPipeline, nullptr);

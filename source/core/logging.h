@@ -8,8 +8,6 @@
 #define LOGGING_H
 #include <string>
 
-#endif //LOGGING_H
-
 
 #ifndef _COLORS_
 #define _COLORS_
@@ -36,6 +34,8 @@
 #define UNDL(x) "\x1B[4m" x RST
 
 #endif  /* _COLORS_ */
+
+#endif //LOGGING_H
 
 namespace ProtoCADCore {
     class Logging {

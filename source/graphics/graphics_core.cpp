@@ -53,9 +53,14 @@ namespace ProtoCADGraphics {
         vk->UpdateIndexBuffer(indices);
     }
 
-    void GraphicsInstance::DrawFrame(Mesh mesh) {
-        m_currentAPI->DrawFrame(mesh);
+    void GraphicsInstance::BeginDrawFrame(Model model, glm::mat4 view, float fov) {
+        m_currentAPI->BeginDrawFrame(model, view, fov);
     }
+
+    void GraphicsInstance::EndDrawFrame() {
+        m_currentAPI->EndDrawFrame();
+    }
+
 
     void GraphicsInstance::CleanUp() {
         ProtoCADCore::Logging::Log("cleaning up graphics");

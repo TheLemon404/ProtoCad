@@ -24,6 +24,8 @@ namespace ProtoCADCore {
 
     void Window::GlfwWindowResizedCallback(GLFWwindow *window, int width, int height) {
         auto win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        win->m_width = width;
+        win->m_height = height;
     }
 
 

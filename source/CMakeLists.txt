@@ -6,10 +6,8 @@ add_executable(ProtoCAD ${src})
 
 # vulkan
 target_include_directories(ProtoCAD PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/vulkan/vulkan_loader/windows/include)
-
 target_link_directories(ProtoCAD PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/vulkan/vulkan_loader/windows/lib)
-
-target_link_libraries(ProtoCAD PRIVATE glfw glm vulkan-1)
+target_link_libraries(ProtoCAD PRIVATE glfw glm vulkan-1 ImGui ImGuiImplVulkan)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
     set_property(TARGET ProtoCAD PROPERTY CXX_STANDARD 20)

@@ -6,8 +6,11 @@
 
 #ifndef IO_H
 #define IO_H
+
 #include <fstream>
 #include <vector>
+
+#endif //IO_H
 
 namespace ProtoCADCore {
     class IO {
@@ -16,4 +19,3 @@ namespace ProtoCADCore {
     };
 }
 
-#endif //IO_H

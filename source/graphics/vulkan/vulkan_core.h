@@ -9,8 +9,6 @@
 #include "vulkan_pipeline.h"
 #include "../graphics_objects.h"
 
-#endif //VULKAN_CORE_H
-
 #include <optional>
 #include <vector>
 
@@ -22,6 +20,9 @@
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
+
+#endif //VULKAN_CORE_H
+
 
 namespace ProtoCADGraphics {
     struct QueueFamilyIndices {
@@ -44,8 +45,15 @@ namespace ProtoCADGraphics {
         GLFWwindow* p_window;
 
         const int MAX_FRAMES_IN_FLIGHT = 2;
+
+        uint32_t t_imageIndex;
+        VkResult t_swapChainOutOfDateResult;
+        bool m_recreateSwapChainHalt;
+
+    public:
         uint32_t currentFrame = 0;
 
+    private:
         //validation layers
         VkInstance m_instance;
         VkInstanceCreateInfo m_createInfo;
@@ -88,12 +96,13 @@ namespace ProtoCADGraphics {
         void CreateLogicalDevice();
 
         //queue
+    public:
         QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
         bool IsDeviceSuitable(VkPhysicalDevice device);
 
+    private:
         VkQueue m_graphicsQueue;
         VkQueue m_presentQueue;
-
 
         //surface KHR
         VkSurfaceKHR m_surface;
@@ -126,14 +135,23 @@ namespace ProtoCADGraphics {
         VkCommandPool m_commandPool;
         std::vector<VkCommandBuffer> m_commandBuffers;
         void CreateCommandPool();
-        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh);
+        void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Mesh mesh);
+        void EndRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
         void CreateCommandBuffers();
 
+        //gui
+        std::vector<VkCommandBuffer> p_guiCommandBuffers;
+    public:
+        void SetGUICommandBuffers(std::vector<VkCommandBuffer> commandBuffers) { p_guiCommandBuffers = commandBuffers; }
+
         //syncronization
-        std::vector<VkSemaphore> m_imageAvailableSemaphores;
-        std::vector<VkSemaphore> m_renderFinishedSemaphores;
-        std::vector<VkFence> m_inFlightFences;
+        std::vector<VkSemaphore> imageAvailableSemaphores;
+        std::vector<VkSemaphore> renderFinishedSemaphores;
+        std::vector<VkFence> inFlightFences;
+
         bool frameBufferResized = false;
+
+    private:
         void CreateSyncObjects();
 
         //vertex buffers
@@ -161,17 +179,36 @@ namespace ProtoCADGraphics {
         void CreateUniformBuffers();
         void CreateDescriptorPool();
         void CreateDescriptorSets();
-        void UpdateUniformBuffer(uint32_t currentImage);
+        void UpdateUniformBuffer(uint32_t currentImage, glm::mat4 model, glm::mat4 view, float fov);
 
     public:
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
         void UpdateIndexBuffer(std::vector<uint32_t> indices);
 
-    public:
         void HandleWindowResize() override;
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
-        void DrawFrame(Mesh mesh) override;
+        void BeginDrawFrame(Model model, glm::mat4 view, float fov) override;
+        void EndDrawFrame() override;
         void CleanUp() override;
+
+        VkInstance GetInstance() { return m_instance; }
+        std::vector<VkCommandBuffer> GetCommandBuffers() { return m_commandBuffers; }
+        VkDevice GetDevice() { return m_device; }
+        VkPhysicalDevice GetPhysicalDevice() { return m_physicalDevice; }
+        VkSurfaceKHR GetSurface() { return m_surface; }
+        VkSurfaceFormatKHR GetSurfaceFormat() { return ChooseSwapSurfaceFormat(QuerySwapChainSupport(m_physicalDevice).formats); }
+        VkPresentModeKHR GetSurfacePresentMode() { return ChooseSwapPresentMode(QuerySwapChainSupport(m_physicalDevice).presentModes); }
+        VkQueue GetGraphicsQueue() { return m_graphicsQueue; }
+        VkQueue GetPresentQueue() { return m_presentQueue; }
+        VkExtent2D GetExtent() { return m_swapChainExtent; }
+        std::vector<VkFramebuffer> GetSwapChainFrameBuffers() { return m_swapChainFramebuffers; }
+        uint32_t GetCurrentFrame() { return currentFrame; }
+        std::shared_ptr<VulkanPipeline> GetCurrentPipeline() { return m_currentPipeline; }
+        VkDescriptorPool GetDescriptorPool() { return m_descriptorPool; }
+        uint32_t GetImageCount() { return m_swapChainImages.size(); }
+        VkCommandPool GetCommandPool() { return m_commandPool; }
+        VkSwapchainKHR GetSwapChainKHR() { return m_swapChain; }
+        std::vector<VkImageView> GetImageViews() { return m_swapChainImageViews; }
 
         //vertex_handling
         static VkVertexInputBindingDescription GetBindingDescription();

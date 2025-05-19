@@ -7,12 +7,13 @@
 #ifndef VULKAN_PIPELINE_H
 #define VULKAN_PIPELINE_H
 
-#endif //VULKAN_PIPELINE_H
-
+#include <memory>
 #include <vector>
 
 #include "vulkan/vulkan_core.h"
 #include "../graphics_objects.h"
+
+#endif //VULKAN_PIPELINE_H
 
 namespace ProtoCADGraphics {
     class VulkanPipeline {
@@ -30,7 +31,7 @@ namespace ProtoCADGraphics {
         VkShaderModule m_fragShaderModule;
 
     public:
-        VkClearValue m_clearColor;
+        VkClearValue clearColor;
 
         VkRenderPass GetRenderPass() { return m_renderPass; }
 
@@ -39,6 +40,7 @@ namespace ProtoCADGraphics {
         VkPipeline GetPipeline() { return m_graphicsPipeline; }
 
         void BeingRenderPass(VkFramebuffer* swapChainFramebuffer, VkExtent2D swapChainExtent, VkCommandBuffer commandBuffer, VkBuffer vertexBuffer, VkBuffer indexBuffer, Mesh mesh, std::vector<VkDescriptorSet> descriptorSets, uint32_t currentFrame);
+        void EndRenderPass(VkCommandBuffer commandBuffer);
         void CleanUp();
     };
 
