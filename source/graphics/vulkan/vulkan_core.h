@@ -127,6 +127,7 @@ namespace ProtoCADGraphics {
         std::vector<VkImageView> m_swapChainImageViews;
 
         void CreateImageViews();
+        VkImageView CreateSingleImageView(VkImage image, VkFormat imageFormat, VkImageAspectFlags aspectMask);
 
         //framebuffers
         void CreateFrameBuffers();
@@ -139,10 +140,8 @@ namespace ProtoCADGraphics {
         void EndRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
         void CreateCommandBuffers();
 
-        //gui
-        std::vector<VkCommandBuffer> p_guiCommandBuffers;
-    public:
-        void SetGUICommandBuffers(std::vector<VkCommandBuffer> commandBuffers) { p_guiCommandBuffers = commandBuffers; }
+        VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
+        void EndSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool commandPool);
 
         //syncronization
         std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -151,7 +150,6 @@ namespace ProtoCADGraphics {
 
         bool frameBufferResized = false;
 
-    private:
         void CreateSyncObjects();
 
         //vertex buffers
@@ -181,11 +179,20 @@ namespace ProtoCADGraphics {
         void CreateDescriptorSets();
         void UpdateUniformBuffer(uint32_t currentImage, glm::mat4 model, glm::mat4 view, float fov);
 
+        //viewport
+        std::vector<VkImage> m_ViewportImages;
+        std::vector<VkDeviceMemory> m_DstImageMemory;
+        std::vector<VkImageView> m_ViewportImageViews;
+        std::vector<VkSampler> m_ViewportSamplers;
+
+        void CreateViewportImage();
+        void CreateViewportImageViews();
+        void CreateViewportSamplers();
+
     public:
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
         void UpdateIndexBuffer(std::vector<uint32_t> indices);
 
-        void HandleWindowResize() override;
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
         void BeginDrawFrame(Model model, glm::mat4 view, float fov) override;
         void EndDrawFrame() override;

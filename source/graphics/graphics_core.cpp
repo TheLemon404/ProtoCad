@@ -2,6 +2,7 @@
 // Created by Osprey on 5/15/2025.
 //
 
+#include "opengl/opengl_core.h"
 #include "graphics_core.h"
 
 #include "../core/logging.h"
@@ -9,16 +10,19 @@
 #include "vulkan/vulkan_core.h"
 
 namespace ProtoCADGraphics {
-    GraphicsInstance::GraphicsInstance(GraphicsAPIType API) {
+    GraphicsInstance::GraphicsInstance(ApplicationGraphicsAPI API) {
         m_API = API;
         m_currentAPI = nullptr;
     }
 
     void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
-        switch (m_API) {
-            case VULKAN:
-                m_currentAPI = std::make_shared<VulkanAPI>();
-                ProtoCADCore::Logging::Log("creating vulkan API instance");
+        if (m_API == VULKAN) {
+            m_currentAPI = std::make_shared<VulkanAPI>();
+            ProtoCADCore::Logging::Log("creating vulkan API instance");
+        }
+        else if (m_API == OPENGL) {
+            m_currentAPI = std::make_shared<OpenGLAPI>();
+            ProtoCADCore::Logging::Log("creating opengl API instance");
         }
 
         m_currentAPI->Initialize(window, mesh);
@@ -44,13 +48,23 @@ namespace ProtoCADGraphics {
     }
 
     void GraphicsInstance::UpdateVertexBuffer(std::vector<Vertex> vertices) {
-        std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
-        vk->UpdateVertexBuffer(vertices);
+        if (m_API == VULKAN) {
+            std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
+            vk->UpdateVertexBuffer(vertices);
+        }
+        else if (m_API == OPENGL) {
+            std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
+        }
     }
 
     void GraphicsInstance::UpdateIndexBuffer(std::vector<uint32_t> indices) {
-        std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
-        vk->UpdateIndexBuffer(indices);
+        if (m_API == VULKAN) {
+            std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
+            vk->UpdateIndexBuffer(indices);
+        }
+        else if (m_API == OPENGL) {
+            std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
+        }
     }
 
     void GraphicsInstance::BeginDrawFrame(Model model, glm::mat4 view, float fov) {

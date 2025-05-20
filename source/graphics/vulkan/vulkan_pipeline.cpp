@@ -265,10 +265,10 @@ namespace ProtoCADGraphics {
         vkDestroyShaderModule(p_device, m_vertShaderModule, nullptr);
     }
 
-    UnlitVulkanPipeline::UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv", descriptorSetLayout) {
+    UnlitVulkanPipeline::UnlitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vulkan/vert.spv", "./assets/shaders/vulkan/frag.spv", descriptorSetLayout) {
     }
 
-    LitVulkanPipeline::LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vert.spv", "./assets/shaders/frag.spv", descriptorSetLayout) {
+    LitVulkanPipeline::LitVulkanPipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat renderPassFormat, VkDescriptorSetLayout descriptorSetLayout) : VulkanPipeline(device, swapChainExtent, renderPassFormat, "./assets/shaders/vulkan/vert.spv", "./assets/shaders/vulkan/frag.spv", descriptorSetLayout) {
     }
 
 }

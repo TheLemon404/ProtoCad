@@ -8,6 +8,7 @@
 #define APPLICATION_H
 #include <memory>
 
+#include "types.h"
 #include "core/window.h"
 #include "editor/gui_layer.h"
 #include "graphics/graphics_core.h"
@@ -25,6 +26,7 @@ public:
     std::shared_ptr<GraphicsInstance> graphics_instance;
     std::shared_ptr<Window> window;
     std::shared_ptr<GUILayer> guilayer;
+    ApplicationGraphicsAPI m_graphicsAPI;
 
     std::vector<ProtoCADGraphics::Vertex> vertices = {
         {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
@@ -39,7 +41,7 @@ public:
     ProtoCADGraphics::Model model;
     ProtoCADScene::Camera camera;
 
-    Application();
+    Application(ApplicationGraphicsAPI api);
 
     void Initialize();
     void Run();

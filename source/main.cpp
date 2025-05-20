@@ -9,10 +9,7 @@
 #include "application.h"
 
 int main() {
-
-    std::cout << "Hello World!" << std::endl;
-
-    Application app = Application();
+    Application app = Application(OPENGL);
     app.Initialize();
     app.Run();
 }

@@ -29,16 +29,27 @@ namespace ProtoCADCore {
     }
 
 
-    void Window::Initialize() {
+    void Window::Initialize(ApplicationGraphicsAPI api) {
+        m_api = api;
+
         Logging::Log("opening window");
         glfwInit();
 
         glfwSetErrorCallback(Window::GlfwErrorCallback);
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        if (api == VULKAN) {
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        }
 
         m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title, NULL, NULL);
+
+        if(api == OPENGL) {
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        }
+
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
         glfwSetWindowUserPointer(m_glfwWindow, this);
         glfwSetWindowSizeCallback(m_glfwWindow, GlfwWindowResizedCallback);
 

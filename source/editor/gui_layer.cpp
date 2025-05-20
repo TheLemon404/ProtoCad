@@ -4,6 +4,7 @@
 
 #include "gui_layer.h"
 
+#include "gui_window.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "../core/logging.h"
@@ -16,56 +17,83 @@ namespace ProtoCADGUI {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
-        switch (p_graphicsAPIType) {
-            case ProtoCADGraphics::VULKAN:
-                auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-                ImGuiIO& io = ImGui::GetIO(); (void)io;
-                io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-                ImGui::StyleColorsDark();
+        if (p_graphicsAPIType == VULKAN){
+            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+            ImGui::StyleColorsDark();
 
-                ImGui_ImplGlfw_InitForVulkan(window->GetGLFWWindow(), true);
+            ImGui_ImplGlfw_InitForVulkan(window->GetGLFWWindow(), true);
 
-                ImGui_ImplVulkan_InitInfo init_info = {};
-                init_info.Instance = vkApi->GetInstance();
-                init_info.PhysicalDevice = vkApi->GetPhysicalDevice();
-                init_info.Device = vkApi->GetDevice();
-                init_info.QueueFamily = vkApi->FindQueueFamilies(vkApi->GetPhysicalDevice()).graphicsFamily.value();
-                init_info.Queue = vkApi->GetGraphicsQueue();
-                init_info.PipelineCache = VK_NULL_HANDLE;
-                init_info.DescriptorPool = vkApi->GetDescriptorPool();
-                init_info.Allocator = nullptr;
-                init_info.MinImageCount = 2;
-                init_info.ImageCount = vkApi->GetImageCount();
-                init_info.CheckVkResultFn = check_vk_result;
-                init_info.RenderPass = vkApi->GetCurrentPipeline()->GetRenderPass();
+            ImGui_ImplVulkan_InitInfo init_info = {};
+            init_info.Instance = vkApi->GetInstance();
+            init_info.PhysicalDevice = vkApi->GetPhysicalDevice();
+            init_info.Device = vkApi->GetDevice();
+            init_info.QueueFamily = vkApi->FindQueueFamilies(vkApi->GetPhysicalDevice()).graphicsFamily.value();
+            init_info.Queue = vkApi->GetGraphicsQueue();
+            init_info.PipelineCache = VK_NULL_HANDLE;
+            init_info.DescriptorPool = vkApi->GetDescriptorPool();
+            init_info.Allocator = nullptr;
+            init_info.MinImageCount = 2;
+            init_info.ImageCount = vkApi->GetImageCount();
+            init_info.CheckVkResultFn = check_vk_result;
+            init_info.RenderPass = vkApi->GetCurrentPipeline()->GetRenderPass();
 
-                ImGui_ImplVulkan_Init(&init_info);
+            ImGui_ImplVulkan_Init(&init_info);
 
-                ImGui_ImplVulkan_CreateFontsTexture();
+            ImGui_ImplVulkan_CreateFontsTexture();
 
-                ProtoCADCore::Logging::Log("Gui Layer Initialized");
+            ProtoCADCore::Logging::Log("Gui Layer Initialized");
+        }
+        else if(p_graphicsAPIType == OPENGL) {
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+            ImGui::StyleColorsDark();
+
+            ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWWindow(), true);
+            ImGui_ImplOpenGL3_Init("#version 450");
         }
     }
 
     void GUILayer::Draw() {
-        switch (p_graphicsAPIType) {
-            case ProtoCADGraphics::VULKAN:
-                auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
+        if (p_graphicsAPIType == VULKAN){
+            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
 
-                ImGui_ImplVulkan_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+        }
+        else if (p_graphicsAPIType == OPENGL) {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+        }
 
-                ImGui::NewFrame();
-                ImGui::ShowDemoWindow();
-                ImGui::Render();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
 
-                ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkApi->GetCommandBuffers()[vkApi->currentFrame]);
+        Viewport::Draw();
+
+        ImGui::Render();
+
+        if (p_graphicsAPIType == VULKAN) {
+            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
+            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkApi->GetCommandBuffers()[vkApi->currentFrame]);
+        }
+        else if (p_graphicsAPIType == OPENGL) {
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         }
     }
 
     void GUILayer::CleanUp() {
-        auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-        ImGui_ImplVulkan_Shutdown();
+        if (p_graphicsAPIType == VULKAN) {
+            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
+            ImGui_ImplVulkan_Shutdown();
+        }
+        else if (p_graphicsAPIType == OPENGL) {
+            ImGui_ImplOpenGL3_Shutdown();
+        }
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }

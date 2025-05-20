@@ -463,6 +463,32 @@ namespace ProtoCADGraphics {
         }
     }
 
+    VkImageView VulkanAPI::CreateSingleImageView(VkImage image, VkFormat imageFormat, VkImageAspectFlags aspectMask) {
+        VkImageView view{};
+
+        VkImageViewCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = image;
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = imageFormat;
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.subresourceRange.aspectMask = aspectMask;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+
+        int result = vkCreateImageView(m_device, &createInfo, nullptr, &view);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to create image views with error: " + std::to_string(result));
+        }
+
+        return view;
+    }
+
     void VulkanAPI::CreateFrameBuffers() {
         m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
 
@@ -498,6 +524,28 @@ namespace ProtoCADGraphics {
         int commandBuffer_result = vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data());
         if (commandBuffer_result != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate command buffers with error code: " + std::to_string(commandBuffer_result));
+        }
+    }
+
+    VkCommandBuffer VulkanAPI::BeginSingleTimeCommands(VkCommandPool commandPool) {
+        VkCommandBuffer commandBuffer{};
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        int result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to begin single time command with error code: " + std::to_string(result));
+        }
+
+        return commandBuffer;
+    }
+
+    void VulkanAPI::EndSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool commandPool) {
+        int result = vkEndCommandBuffer(commandBuffer);
+        if (result != VK_SUCCESS) {
+            ProtoCADCore::Logging::Error("failed to end single time command with error code: " + std::to_string(result));
         }
     }
 
@@ -558,10 +606,6 @@ namespace ProtoCADGraphics {
                 throw std::runtime_error("failed to create synchronization objects for a frame with error code: " + std::to_string(result));
             }
         }
-    }
-
-    void VulkanAPI::HandleWindowResize() {
-        frameBufferResized = true;
     }
 
     uint32_t VulkanAPI::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -804,6 +848,70 @@ namespace ProtoCADGraphics {
 
         memcpy(m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
+
+    void VulkanAPI::CreateViewportImage() {
+        m_ViewportImages.resize(m_swapChainImages.size());
+        m_DstImageMemory.resize(m_swapChainImages.size());
+
+        for (uint32_t i = 0; i < m_swapChainImages.size(); i++) {
+            // Create the linear tiled destination image to copy to and to read the memory from
+			VkImageCreateInfo imageCreateCI{};
+			imageCreateCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageCreateCI.imageType = VK_IMAGE_TYPE_2D;
+			// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
+			imageCreateCI.format = VK_FORMAT_B8G8R8A8_SRGB;
+			imageCreateCI.extent.width = m_swapChainExtent.width;
+			imageCreateCI.extent.height = m_swapChainExtent.height;
+			imageCreateCI.extent.depth = 1;
+			imageCreateCI.arrayLayers = 1;
+			imageCreateCI.mipLevels = 1;
+			imageCreateCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageCreateCI.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageCreateCI.tiling = VK_IMAGE_TILING_LINEAR;
+			imageCreateCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			// Create the image
+			// VkImage dstImage;
+			vkCreateImage(m_device, &imageCreateCI, nullptr, &m_ViewportImages[i]);
+			// Create memory to back up the image
+			VkMemoryRequirements memRequirements;
+			VkMemoryAllocateInfo memAllocInfo{};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			// VkDeviceMemory dstImageMemory;
+			vkGetImageMemoryRequirements(m_device, m_ViewportImages[i], &memRequirements);
+			memAllocInfo.allocationSize = memRequirements.size;
+			// Memory must be host visible to copy from
+			memAllocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			vkAllocateMemory(m_device, &memAllocInfo, nullptr, &m_DstImageMemory[i]);
+			vkBindImageMemory(m_device, m_ViewportImages[i], m_DstImageMemory[i], 0);
+
+//			insertImageMemoryBarrier(
+//					copyCmd,
+//					m_ViewportImages[i],
+//					VK_ACCESS_TRANSFER_READ_BIT,
+//					VK_ACCESS_MEMORY_READ_BIT,
+//					VK_IMAGE_LAYOUT_UNDEFINED,
+//					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//					VK_PIPELINE_STAGE_TRANSFER_BIT,
+//					VK_PIPELINE_STAGE_TRANSFER_BIT,
+//					VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
+
+//			EndSingleTimeCommands(copyCmd, m_ViewportCommandPool);
+        }
+    }
+
+    void VulkanAPI::CreateViewportImageViews() {
+        m_ViewportImageViews.resize(m_ViewportImages.size());
+
+        for (uint32_t i = 0; i < m_ViewportImages.size(); i++)
+        {
+            m_ViewportImageViews[i] = CreateSingleImageView(m_ViewportImages[i], VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+        }
+    }
+
+    void VulkanAPI::CreateViewportSamplers() {
+
+    }
+
 
     void VulkanAPI::UpdateIndexBuffer(std::vector<uint32_t> indices) {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();

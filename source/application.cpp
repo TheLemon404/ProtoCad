@@ -10,16 +10,18 @@
 
 using ProtoCADCore::Logging;
 
-Application::Application() {
+Application::Application(ApplicationGraphicsAPI api) {
     window = std::make_shared<Window>("ProtoCAD", 800, 600);
-    graphics_instance = std::make_shared<GraphicsInstance>(ProtoCADGraphics::VULKAN);
+    graphics_instance = std::make_shared<GraphicsInstance>(api);
+
+    m_graphicsAPI = api;
 }
 
 void Application::Initialize() {
     Logging::Log("initializing application");
     model = {{vertices, indices}, glm::identity<glm::mat4>()};
     camera = {};
-    window->Initialize();
+    window->Initialize(m_graphicsAPI);
     graphics_instance->Initialize(window, model.mesh);
 
     guilayer = std::make_shared<GUILayer>(graphics_instance->GetAPI(), graphics_instance->GetAPIType());

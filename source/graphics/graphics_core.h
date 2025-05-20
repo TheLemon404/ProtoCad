@@ -11,15 +11,11 @@
 #include <vector>
 #include "../core/window.h"
 #include "graphics_objects.h"
+#include "../types.h"
 
 #endif //GRAPHICS_CORE_H
 
 namespace ProtoCADGraphics {
-    enum GraphicsAPIType
-    {
-        VULKAN,
-    };
-
     enum MeshUpdateType {
         UPDATE_INDEX_BUFFER,
         UPDATE_VERTEX_BUFFER,
@@ -28,7 +24,8 @@ namespace ProtoCADGraphics {
 
     class GraphicsAPI {
     public:
-        virtual void HandleWindowResize() = 0;
+        virtual ~GraphicsAPI() = default;
+
         virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) = 0;
         virtual void BeginDrawFrame(Model model, glm::mat4 view, float fov) = 0;
         virtual void EndDrawFrame() = 0;
@@ -38,18 +35,18 @@ namespace ProtoCADGraphics {
     class GraphicsInstance
     {
     private:
-        GraphicsAPIType m_API;
+        ApplicationGraphicsAPI m_API;
         std::shared_ptr<GraphicsAPI> m_currentAPI;
 
     public:
-        GraphicsInstance(GraphicsAPIType API);
+        GraphicsInstance(ApplicationGraphicsAPI API);
 
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh);
         void BeginDrawFrame(Model model, glm::mat4 view, float fov);
         void EndDrawFrame();
         void CleanUp();
         void UpdateMesh(Mesh mesh,  MeshUpdateType updateType = UPDATE_ALL_BUFFERS);
-        GraphicsAPIType GetAPIType() { return m_API; }
+        ApplicationGraphicsAPI GetAPIType() { return m_API; }
         std::shared_ptr<GraphicsAPI> GetAPI() { return m_currentAPI; }
 
     private:

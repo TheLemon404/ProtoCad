@@ -10,6 +10,7 @@
 #include "imgui_impl_vulkan.h"
 #include "../graphics/graphics_core.h"
 #include "GLFW/glfw3.h"
+#include "imgui_impl_opengl3.h"
 #include "../graphics/vulkan/vulkan_core.h"
 
 #endif //GUI_LAYER_H
@@ -17,8 +18,9 @@
 namespace ProtoCADGUI {
     class GUILayer {
     private:
+        //vulkan
         const std::shared_ptr<ProtoCADGraphics::GraphicsAPI> p_graphicsApi;
-        const ProtoCADGraphics::GraphicsAPIType p_graphicsAPIType;
+        const ApplicationGraphicsAPI p_graphicsAPIType;
 
         std::shared_ptr<ProtoCADCore::Window> p_window;
 
@@ -31,8 +33,12 @@ namespace ProtoCADGUI {
                 abort();
         }
 
+        VkDescriptorSet m_displayDescriptorSet;
+
+        //opengl
+
     public:
-        GUILayer(std::shared_ptr<ProtoCADGraphics::GraphicsAPI> api, ProtoCADGraphics::GraphicsAPIType apiType) : p_graphicsApi(api), p_graphicsAPIType(apiType) {};
+        GUILayer(std::shared_ptr<ProtoCADGraphics::GraphicsAPI> api, ApplicationGraphicsAPI apiType) : p_graphicsApi(api), p_graphicsAPIType(apiType) {};
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
         void Draw();
         void CleanUp();
