@@ -27,7 +27,7 @@ namespace ProtoCADGraphics {
         unsigned int id;
         unsigned int size;
 
-        void Delete();
+        virtual void Delete();
     };
 
     struct VBO : BufferObject {
@@ -35,12 +35,16 @@ namespace ProtoCADGraphics {
 
         void UploadData(std::vector<float> data);
         void CreateVertexAttribPointer(int location, int size, int type);
+
+        void Delete() override;
     };
 
     struct IBO : BufferObject {
         int indexCount;
 
         void UploadData(std::vector<uint32_t> data);
+
+        void Delete() override;
     };
 
     struct VAO {
@@ -50,6 +54,8 @@ namespace ProtoCADGraphics {
 
         void Bind();
         void Unbind();
+
+        void Delete();
     };
 
 
@@ -64,8 +70,12 @@ namespace ProtoCADGraphics {
     struct Texture {
         unsigned int id;
 
+        int width, height;
+
         void Bind();
         void Unbind();
+
+        void Delete();
     };
 
     struct FrameBuffer {
@@ -75,6 +85,8 @@ namespace ProtoCADGraphics {
 
         void Bind();
         void Unbind();
+
+        void Delete();
     };
 
 
@@ -139,10 +151,10 @@ namespace ProtoCADGraphics {
         void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) override;
         void EndDrawFrame() override;
         void CleanUp() override;
+        int GetViewportRenderTexture() override { return m_renderTexture.id; }
 
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
         void UpdateIndexBuffer(std::vector<uint32_t> indices);
 
-        Texture GetRenderedTexture() { return m_renderTexture; }
     };
 }

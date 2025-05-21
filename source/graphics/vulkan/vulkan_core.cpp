@@ -1135,6 +1135,11 @@ namespace ProtoCADGraphics {
         vkDestroyInstance(m_instance, nullptr);
     }
 
+    int VulkanAPI::GetViewportRenderTexture() {
+        return 0;
+    }
+
+
     VkVertexInputBindingDescription VulkanAPI::GetBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
 

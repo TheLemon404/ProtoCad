@@ -27,27 +27,19 @@ namespace ProtoCADCore {
         auto win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         win->m_width = width;
         win->m_height = height;
-
-        if (win->m_api == OPENGL) {
-            glViewport(0, 0, width, height);
-        }
     }
 
 
     void Window::Initialize(ApplicationGraphicsAPI api) {
         m_api = api;
 
-        Logging::Log("opening window");
+        //initialize glfw
         glfwInit();
-
         glfwSetErrorCallback(Window::GlfwErrorCallback);
-
         if (api == VULKAN) {
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         }
-
         m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title, NULL, NULL);
-
         if(api == OPENGL) {
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -55,23 +47,22 @@ namespace ProtoCADCore {
             glfwWindowHint(GLFW_SAMPLES, 1);
             glfwSwapInterval(0);
         }
-
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
         glfwSetWindowUserPointer(m_glfwWindow, this);
         glfwSetWindowSizeCallback(m_glfwWindow, GlfwWindowResizedCallback);
 
-        //input callbacks
+        //initialize input
         Input::Initialize();
-
         glfwSetKeyCallback(m_glfwWindow, Input::GLFWKeyCallback);
         glfwSetMouseButtonCallback(m_glfwWindow, Input::GLFWMouseButtonCallback);
         glfwSetScrollCallback(m_glfwWindow, Input::GLFWScrollCallback);
         glfwSetCursorPosCallback(m_glfwWindow, Input::GLFWSetCursorPosCallback);
 
+        //set glfw context
         glfwMakeContextCurrent(m_glfwWindow);
-
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        Logging::Log("window created");
     }
 
     bool Window::ShouldClose() {

@@ -198,6 +198,8 @@ namespace ProtoCADGraphics {
         void EndDrawFrame() override;
         void CleanUp() override;
 
+        int GetViewportRenderTexture() override;
+
         VkInstance GetInstance() { return m_instance; }
         std::vector<VkCommandBuffer> GetCommandBuffers() { return m_commandBuffers; }
         VkDevice GetDevice() { return m_device; }

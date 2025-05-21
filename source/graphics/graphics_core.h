@@ -30,6 +30,8 @@ namespace ProtoCADGraphics {
         virtual void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) = 0;
         virtual void EndDrawFrame() = 0;
         virtual void CleanUp() = 0;
+
+        virtual int GetViewportRenderTexture() = 0;
     };
 
     class GraphicsInstance

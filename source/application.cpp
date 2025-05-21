@@ -18,15 +18,18 @@ Application::Application(ApplicationGraphicsAPI api) {
     else if (api == OPENGL) {
         window = std::make_shared<Window>("ProtoCAD OpenGL", 800, 600);
     }
-    graphics_instance = std::make_shared<GraphicsInstance>(api);
 
+    graphics_instance = std::make_shared<GraphicsInstance>(api);
     m_graphicsAPI = api;
 }
 
 void Application::Initialize() {
     Logging::Log("initializing application");
+
+    //temporary (debugging purposes)
     model = {{vertices, indices}, glm::identity<glm::mat4>()};
     camera = {};
+
     window->Initialize(m_graphicsAPI);
     graphics_instance->Initialize(window, model.mesh);
 
@@ -38,8 +41,10 @@ void Application::Run() {
     Logging::Log("running application");
 
     while (!window->ShouldClose()) {
-        camera.UpdateMatrices();
         window->Poll();
+
+        //temporary (debugging purposes)
+        camera.UpdateMatrices();
         if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && model.mesh.vertices[0].color.x == 0.0f) {
 
             model.mesh.vertices = {
@@ -56,10 +61,12 @@ void Application::Run() {
             graphics_instance->UpdateMesh(model.mesh);
         }
 
+        //render loop
         graphics_instance->BeginDrawFrame(model, camera.view, 45, guiLayer->GetViewportWindowSize());
         guiLayer->Draw();
         graphics_instance->EndDrawFrame();
 
+        //temporary (debugging purposes)
         model.transform = glm::rotate(model.transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
     }
 

@@ -7,6 +7,7 @@
 #include "gui_window.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
+#include "imgui_internal.h"
 #include "../core/logging.h"
 #include "../graphics/opengl/opengl_core.h"
 
@@ -15,15 +16,16 @@ namespace ProtoCADGUI {
     void GUILayer::Initialize(std::shared_ptr<ProtoCADCore::Window> window) {
         p_window = window;
 
+        //initialize imgui (api agnostic)
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        ImGui::StyleColorsDark();
 
         if (p_graphicsAPIType == VULKAN){
             auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-            ImGuiIO& io = ImGui::GetIO(); (void)io;
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-            ImGui::StyleColorsDark();
 
             ImGui_ImplGlfw_InitForVulkan(window->GetGLFWWindow(), true);
 
@@ -44,18 +46,13 @@ namespace ProtoCADGUI {
             ImGui_ImplVulkan_Init(&init_info);
 
             ImGui_ImplVulkan_CreateFontsTexture();
-
-            ProtoCADCore::Logging::Log("Gui Layer Initialized");
         }
         else if(p_graphicsAPIType == OPENGL) {
-            ImGuiIO& io = ImGui::GetIO(); (void)io;
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-            ImGui::StyleColorsDark();
-
             ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWWindow(), true);
             ImGui_ImplOpenGL3_Init("#version 450");
         }
+
+        ProtoCADCore::Logging::Log("Gui Layer Initialized");
     }
 
     void GUILayer::Draw() {
@@ -71,32 +68,30 @@ namespace ProtoCADGUI {
         }
 
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
 
-        if (p_graphicsAPIType == VULKAN) {
-            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-        }
-        else if (p_graphicsAPIType == OPENGL) {
-            auto oglApi = std::static_pointer_cast<ProtoCADGraphics::OpenGLAPI>(p_graphicsApi);
+        //dockspace
+        ImGui::SetNextWindowPos(ImVec2(0,0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(p_window->GetDimensions().x, p_window->GetDimensions().y));
 
-            ImGui::Begin("viewport");
-            {
-                ImGui::BeginChild("GameRender");
+        //viewport
+        ImGui::Begin("viewport", nullptr, ImGuiOldColumnFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+        {
+            ImGui::BeginChild("render");
 
-                m_viewportWindowSize.x = ImGui::GetContentRegionAvail().x;
-                m_viewportWindowSize.y = ImGui::GetContentRegionAvail().y;
+            m_viewportWindowSize.x = ImGui::GetContentRegionAvail().x;
+            m_viewportWindowSize.y = ImGui::GetContentRegionAvail().y;
 
-                ImGui::Image(
-                    (ImTextureID)oglApi->GetRenderedTexture().id,
-                    ImGui::GetContentRegionAvail(),
-                    ImVec2(0, 1),
-                    ImVec2(1, 0)
-                );
-            }
+            ImGui::Image(
+                (ImTextureID)p_graphicsApi->GetViewportRenderTexture(),
+                ImGui::GetContentRegionAvail(),
+                ImVec2(0, 1),
+                ImVec2(1, 0)
+            );
 
             ImGui::EndChild();
-            ImGui::End();
         }
+
+        ImGui::End();
 
         ImGui::Render();
 
@@ -117,6 +112,7 @@ namespace ProtoCADGUI {
         else if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_Shutdown();
         }
+
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
