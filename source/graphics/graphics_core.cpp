@@ -69,8 +69,8 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void GraphicsInstance::BeginDrawFrame(Model model, glm::mat4 view, float fov) {
-        m_currentAPI->BeginDrawFrame(model, view, fov);
+    void GraphicsInstance::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
+        m_currentAPI->BeginDrawFrame(model, view, fov, viewport);
     }
 
     void GraphicsInstance::EndDrawFrame() {

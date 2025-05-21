@@ -108,6 +108,34 @@ namespace ProtoCADGraphics {
         glBindVertexArray(0);
     }
 
+    void FrameBuffer::Rescale(int width, int height, std::shared_ptr<Texture> texture) {
+        texture->Bind();
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->id, 0);
+
+        glBindRenderbuffer(GL_RENDERBUFFER, id);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, id);
+    }
+
+    void FrameBuffer::Bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+    }
+
+    void FrameBuffer::Unbind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Texture::Bind() {
+        glBindTexture(GL_TEXTURE_2D, id);
+    }
+
+    void Texture::Unbind() {
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
     VAO OpenGLAPI::CreateVAO() {
         VAO vao{};
         glGenVertexArrays(1, &vao.id);
@@ -175,11 +203,44 @@ namespace ProtoCADGraphics {
         return shaderProgram;
     }
 
+    FrameBuffer OpenGLAPI::CreateFrameBuffer() {
+        FrameBuffer frameBuffer{};
+        glGenFramebuffers(1, &frameBuffer.id);
+        frameBuffer.Bind();
+
+        return frameBuffer;
+    }
+
+    Texture OpenGLAPI::CreateTexture() {
+        Texture texture{};
+        glGenTextures(1, &texture.id);
+        texture.Bind();
+
+        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        return texture;
+    }
+
     void OpenGLAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
         p_window = window;
 
         if (!gladLoadGL()) {
             ProtoCADCore::Logging::Error("failed to initialize glad");
+        }
+
+        m_frameBuffer = CreateFrameBuffer();
+        m_renderTexture = CreateTexture();
+
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_renderTexture.id, 0);
+
+        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            ProtoCADCore::Logging::Error("failed to create framebuffer");
         }
 
         m_vertexShader = CreateShader(VERTEX_SHADER);
@@ -206,9 +267,18 @@ namespace ProtoCADGraphics {
 
         m_vao.vbo = std::make_shared<VBO>(m_vbo);
         m_vao.ibo = std::make_shared<IBO>(m_ibo);
+
+        m_vao.Unbind();
     }
 
-    void OpenGLAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov) {
+    void OpenGLAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
+        glClearColor(0, 0, 0, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        m_frameBuffer.Bind();
+
+        m_frameBuffer.Rescale(viewport.x, viewport.y, std::make_shared<Texture>(m_renderTexture));
+        glViewport(0, 0, viewport.x, viewport.y);
         glClearColor(0, 0, 0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -216,12 +286,18 @@ namespace ProtoCADGraphics {
 
         m_shaderProgram.UploadUniformMat4("model", model.transform);
         m_shaderProgram.UploadUniformMat4("view", view);
-        glm::mat4 projection = glm::perspective(glm::radians(fov), p_window->GetDimensions().x / (float) p_window->GetDimensions().y, 0.001f, 10000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(fov), viewport.x / (float) viewport.y, 0.001f, 10000.0f);
         m_shaderProgram.UploadUniformMat4("projection", projection);
 
         glBindVertexArray(m_vao.id);
 
         glDrawElements(GL_TRIANGLES, model.mesh.indices.size(), GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(0);
+
+        glUseProgram(0);
+
+        m_frameBuffer.Unbind();
     }
 
     void OpenGLAPI::EndDrawFrame() {
@@ -229,11 +305,12 @@ namespace ProtoCADGraphics {
     }
 
     void OpenGLAPI::CleanUp() {
-
+        m_shaderProgram.CleanUp();
     }
 
     void OpenGLAPI::UpdateVertexBuffer(std::vector<Vertex> vertices) {
         glDeleteBuffers(1, &m_vbo.id);
+        m_vao.Bind();
 
         //vertices
         m_vbo = CreateVBO((int)vertices.size() * 3);
@@ -243,13 +320,18 @@ namespace ProtoCADGraphics {
         m_cbo = CreateVBO((int)vertices.size() * 3);
         m_cbo.UploadData(ExtractVertexColors(vertices));
         m_cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+
+        m_vao.Unbind();
     }
 
     void OpenGLAPI::UpdateIndexBuffer(std::vector<uint32_t> indices) {
         glDeleteBuffers(1, &m_ibo.id);
+        m_vao.Bind();
 
         m_ibo = CreateIBO((int)indices.size());
         m_ibo.UploadData(indices);
+
+        m_vao.Unbind();
     }
 
 }

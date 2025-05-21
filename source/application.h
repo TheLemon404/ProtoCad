@@ -25,7 +25,7 @@ class Application {
 public:
     std::shared_ptr<GraphicsInstance> graphics_instance;
     std::shared_ptr<Window> window;
-    std::shared_ptr<GUILayer> guilayer;
+    std::shared_ptr<GUILayer> guiLayer;
     ApplicationGraphicsAPI m_graphicsAPI;
 
     std::vector<ProtoCADGraphics::Vertex> vertices = {

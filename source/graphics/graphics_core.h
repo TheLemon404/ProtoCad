@@ -27,7 +27,7 @@ namespace ProtoCADGraphics {
         virtual ~GraphicsAPI() = default;
 
         virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) = 0;
-        virtual void BeginDrawFrame(Model model, glm::mat4 view, float fov) = 0;
+        virtual void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) = 0;
         virtual void EndDrawFrame() = 0;
         virtual void CleanUp() = 0;
     };
@@ -42,7 +42,7 @@ namespace ProtoCADGraphics {
         GraphicsInstance(ApplicationGraphicsAPI API);
 
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh);
-        void BeginDrawFrame(Model model, glm::mat4 view, float fov);
+        void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport);
         void EndDrawFrame();
         void CleanUp();
         void UpdateMesh(Mesh mesh,  MeshUpdateType updateType = UPDATE_ALL_BUFFERS);

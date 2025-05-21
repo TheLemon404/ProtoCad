@@ -12,6 +12,6 @@
 namespace ProtoCADGUI {
     class Viewport {
     public:
-        static void Draw();
+        static void Draw(unsigned int sceneTexture);
     };
 }

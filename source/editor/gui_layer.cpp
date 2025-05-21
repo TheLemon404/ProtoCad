@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "../core/logging.h"
+#include "../graphics/opengl/opengl_core.h"
 
 namespace ProtoCADGUI {
 
@@ -72,7 +73,30 @@ namespace ProtoCADGUI {
         ImGui::NewFrame();
         ImGui::ShowDemoWindow();
 
-        Viewport::Draw();
+        if (p_graphicsAPIType == VULKAN) {
+            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
+        }
+        else if (p_graphicsAPIType == OPENGL) {
+            auto oglApi = std::static_pointer_cast<ProtoCADGraphics::OpenGLAPI>(p_graphicsApi);
+
+            ImGui::Begin("viewport");
+            {
+                ImGui::BeginChild("GameRender");
+
+                m_viewportWindowSize.x = ImGui::GetContentRegionAvail().x;
+                m_viewportWindowSize.y = ImGui::GetContentRegionAvail().y;
+
+                ImGui::Image(
+                    (ImTextureID)oglApi->GetRenderedTexture().id,
+                    ImGui::GetContentRegionAvail(),
+                    ImVec2(0, 1),
+                    ImVec2(1, 0)
+                );
+            }
+
+            ImGui::EndChild();
+            ImGui::End();
+        }
 
         ImGui::Render();
 
@@ -82,7 +106,6 @@ namespace ProtoCADGUI {
         }
         else if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         }
     }
 

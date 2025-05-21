@@ -30,8 +30,8 @@ void Application::Initialize() {
     window->Initialize(m_graphicsAPI);
     graphics_instance->Initialize(window, model.mesh);
 
-    guilayer = std::make_shared<GUILayer>(graphics_instance->GetAPI(), graphics_instance->GetAPIType());
-    guilayer->Initialize(window);
+    guiLayer = std::make_shared<GUILayer>(graphics_instance->GetAPI(), graphics_instance->GetAPIType());
+    guiLayer->Initialize(window);
 }
 
 void Application::Run() {
@@ -55,8 +55,9 @@ void Application::Run() {
 
             graphics_instance->UpdateMesh(model.mesh);
         }
-        graphics_instance->BeginDrawFrame(model, camera.view, 45);
-        guilayer->Draw();
+
+        graphics_instance->BeginDrawFrame(model, camera.view, 45, guiLayer->GetViewportWindowSize());
+        guiLayer->Draw();
         graphics_instance->EndDrawFrame();
 
         model.transform = glm::rotate(model.transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));

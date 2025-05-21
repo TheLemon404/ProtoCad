@@ -1021,7 +1021,7 @@ namespace ProtoCADGraphics {
         CreateSyncObjects();
     }
 
-    void VulkanAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov) {
+    void VulkanAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
         vkWaitForFences(m_device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         t_swapChainOutOfDateResult = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &t_imageIndex);

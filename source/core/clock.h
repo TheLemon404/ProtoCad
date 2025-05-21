@@ -12,7 +12,14 @@
 namespace ProtoCADCore {
     class Clock {
     private:
+        static double m_t;
+        static double m_dt;
+
         static double m_lastTime;
+        static double m_frameTime;
+
+        static double m_accumulator;
+
         static double m_deltaTime;
 
     public:

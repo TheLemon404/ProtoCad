@@ -36,8 +36,11 @@ namespace ProtoCADGUI {
         VkDescriptorSet m_displayDescriptorSet;
 
         //opengl
+        glm::vec2 m_viewportWindowSize;
 
     public:
+        glm::vec2 GetViewportWindowSize() { return m_viewportWindowSize; }
+
         GUILayer(std::shared_ptr<ProtoCADGraphics::GraphicsAPI> api, ApplicationGraphicsAPI apiType) : p_graphicsApi(api), p_graphicsAPIType(apiType) {};
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
         void Draw();
