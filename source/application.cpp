@@ -6,6 +6,7 @@
 
 #include "core/input.h"
 #include "core/logging.h"
+#include "core/clock.h"
 #include "glm/ext/matrix_transform.hpp"
 
 using ProtoCADCore::Logging;
@@ -57,6 +58,8 @@ void Application::Run() {
         graphics_instance->BeginDrawFrame(model, camera.view, 45);
         guilayer->Draw();
         graphics_instance->EndDrawFrame();
+
+        model.transform = glm::rotate(model.transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
     }
 
     graphics_instance->CleanUp();

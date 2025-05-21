@@ -9,7 +9,7 @@
 #include "application.h"
 
 int main() {
-    Application app = Application(OPENGL);
+    Application app = Application(VULKAN);
     app.Initialize();
     app.Run();
 }

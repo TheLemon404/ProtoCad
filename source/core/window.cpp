@@ -8,6 +8,7 @@
 
 #include "logging.h"
 #include "input.h"
+#include "clock.h"
 
 namespace ProtoCADCore {
     Window::Window(const char* title, unsigned int width, unsigned int height) {
@@ -76,6 +77,7 @@ namespace ProtoCADCore {
 
     void Window::Poll() {
         glfwPollEvents();
+        Clock::Tick();
     }
 
     void Window::Close() {
