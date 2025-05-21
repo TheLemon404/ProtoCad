@@ -70,11 +70,10 @@ namespace ProtoCADGUI {
         ImGui::NewFrame();
 
         //dockspace
-        ImGui::SetNextWindowPos(ImVec2(0,0), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(p_window->GetDimensions().x, p_window->GetDimensions().y));
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
         //viewport
-        ImGui::Begin("viewport", nullptr, ImGuiOldColumnFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+        ImGui::Begin("viewport", nullptr, ImGuiWindowFlags_NoCollapse);
         {
             ImGui::BeginChild("render");
 
