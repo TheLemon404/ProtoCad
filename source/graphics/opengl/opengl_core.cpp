@@ -9,6 +9,7 @@
 #include "../../core/io.h"
 #include "../../core/logging.h"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.inl"
 
 namespace ProtoCADGraphics {
@@ -203,6 +204,17 @@ namespace ProtoCADGraphics {
         return data;
     }
 
+    std::vector<float> OpenGLAPI::ExtractVertexTexCoords(std::vector<Vertex> vertices) {
+        std::vector<float> data;
+
+        for(int i = 0; i < vertices.size(); i++) {
+            data.push_back(vertices[i].texCoord.x);
+            data.push_back(vertices[i].texCoord.y);
+        }
+
+        return data;
+    }
+
     ShaderObject OpenGLAPI::CreateShader(ShaderType type) {
         ShaderObject shader = {};
         shader.type = type;
@@ -248,12 +260,44 @@ namespace ProtoCADGraphics {
         return texture;
     }
 
-    void OpenGLAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
+    void OpenGLAPI::DrawCheckeredBackground(glm::vec2 viewport) {
+        m_checkeredProgram.Use();
+
+        m_checkeredProgram.UploadUniformVec2("resolution", viewport);
+        m_checkeredProgram.UploadUniformFloat("darkGrey", 0.05f);
+        m_checkeredProgram.UploadUniformFloat("lightGrey", 0.1f);
+
+        glBindVertexArray(m_quadVao.id);
+        glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glUseProgram(0);
+    }
+
+    void OpenGLAPI::DrawGrid(glm::vec2 viewport, ProtoCADScene::Camera camera) {
+        m_gridProgram.Use();
+
+        glm::mat4 view = glm::lookAt(camera.position, camera.target, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_gridProgram.UploadUniformMat4("view", view);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+        m_gridProgram.UploadUniformMat4("projection", projection);
+
+        glBindVertexArray(m_quadVao.id);
+        glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glUseProgram(0);
+    }
+
+    void OpenGLAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) {
         p_window = window;
 
         if (!gladLoadGL()) {
             ProtoCADCore::Logging::Error("failed to initialize glad");
         }
+
+        glEnable(GL_CULL_FACE | GL_DEPTH_TEST);
+        glCullFace(GL_BACK);
 
         //initialize framebuffers and render texture
         m_frameBuffer = CreateFrameBuffer();
@@ -265,27 +309,67 @@ namespace ProtoCADGraphics {
             ProtoCADCore::Logging::Error("failed to create framebuffer");
         }
 
+        //initialize background assets
+        m_defaultQuad = {};
+
+        m_quadVao = CreateVAO();
+
+        m_quadVbo = CreateVBO((int)m_defaultQuad.vertices.size() * 3);
+        m_quadVbo.UploadData(ExtractVertexPositions(m_defaultQuad.vertices));
+        m_quadVbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
+
+        m_quadCbo = CreateVBO((int)m_defaultQuad.vertices.size() * 3);
+        m_quadCbo.UploadData(ExtractVertexColors(m_defaultQuad.vertices));
+        m_quadCbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+
+        m_quadUbo = CreateVBO((int)m_defaultQuad.vertices.size() * 3);
+        m_quadUbo.UploadData(ExtractVertexTexCoords(m_defaultQuad.vertices));
+        m_quadUbo.CreateVertexAttribPointer(2, 2, GL_FLOAT);
+
+        m_quadIbo = CreateIBO((int)m_defaultQuad.indices.size());
+        m_quadIbo.UploadData(m_defaultQuad.indices);
+
+        m_quadVao.vbo = std::make_shared<VBO>(m_quadVbo);
+        m_quadVao.cbo = std::make_shared<VBO>(m_quadCbo);
+        m_quadVao.ubo = std::make_shared<VBO>(m_quadUbo);
+        m_quadVao.ibo = std::make_shared<IBO>(m_quadIbo);
+
+        m_quadVao.Unbind();
+
         //initialize shaders
         m_vertexShader = CreateShader(VERTEX_SHADER);
         m_vertexShader.Load("./assets/shaders/opengl/unlit.vert");
+        m_screenSpaceVertexShader = CreateShader(VERTEX_SHADER);
+        m_screenSpaceVertexShader.Load("./assets/shaders/opengl/screenSpace.vert");
+        m_gridVertexShader = CreateShader(VERTEX_SHADER);
+        m_gridVertexShader.Load("./assets/shaders/opengl/grid.vert");
         m_fragmentShader = CreateShader(FRAGMENT_SHADER);
         m_fragmentShader.Load("./assets/shaders/opengl/unlit.frag");
+        m_checkeredFragmentShader = CreateShader(FRAGMENT_SHADER);
+        m_checkeredFragmentShader.Load("./assets/shaders/opengl/checkers.frag");
+        m_gridFragmentShader = CreateShader(FRAGMENT_SHADER);
+        m_gridFragmentShader.Load("./assets/shaders/opengl/grid.frag");
+
         m_shaderProgram = CreateProgram();
         m_shaderProgram.Load(std::shared_ptr<ShaderObject>(&m_vertexShader), std::shared_ptr<ShaderObject>(&m_fragmentShader));
+        m_checkeredProgram = CreateProgram();
+        m_checkeredProgram.Load(std::shared_ptr<ShaderObject>(&m_screenSpaceVertexShader), std::shared_ptr<ShaderObject>(&m_checkeredFragmentShader));
+        m_gridProgram = CreateProgram();
+        m_gridProgram.Load(std::shared_ptr<ShaderObject>(&m_gridVertexShader), std::shared_ptr<ShaderObject>(&m_gridFragmentShader));
 
         //initialize vertex data
         m_vao = CreateVAO();
 
-        m_vbo = CreateVBO((int)mesh.vertices.size() * 3);
-        m_vbo.UploadData(ExtractVertexPositions(mesh.vertices));
+        m_vbo = CreateVBO((int)scene->models[0].mesh.vertices.size() * 3);
+        m_vbo.UploadData(ExtractVertexPositions(scene->models[0].mesh.vertices));
         m_vbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
 
-        m_cbo = CreateVBO((int)mesh.vertices.size() * 3);
-        m_cbo.UploadData(ExtractVertexColors(mesh.vertices));
+        m_cbo = CreateVBO((int)scene->models[0].mesh.vertices.size() * 3);
+        m_cbo.UploadData(ExtractVertexColors(scene->models[0].mesh.vertices));
         m_cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
 
-        m_ibo = CreateIBO((int)mesh.indices.size());
-        m_ibo.UploadData(mesh.indices);
+        m_ibo = CreateIBO((int)scene->models[0].mesh.indices.size());
+        m_ibo.UploadData(scene->models[0].mesh.indices);
 
         m_vao.vbo = std::make_shared<VBO>(m_vbo);
         m_vao.ibo = std::make_shared<IBO>(m_ibo);
@@ -293,7 +377,7 @@ namespace ProtoCADGraphics {
         m_vao.Unbind();
     }
 
-    void OpenGLAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
+    void OpenGLAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
         //clear outside viewport
         glClearColor(0, 0, 0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -305,21 +389,29 @@ namespace ProtoCADGraphics {
         glClearColor(0, 0, 0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //use shaders
-        m_shaderProgram.Use();
-        m_shaderProgram.UploadUniformMat4("model", model.transform);
-        m_shaderProgram.UploadUniformMat4("view", view);
-        glm::mat4 projection = glm::perspective(glm::radians(fov), viewport.x / (float) viewport.y, 0.001f, 10000.0f);
-        m_shaderProgram.UploadUniformMat4("projection", projection);
+        DrawCheckeredBackground(viewport);
+        DrawGrid(viewport, scene->camera);
 
-        //draw to viewport
-        glBindVertexArray(m_vao.id);
-        glDrawElements(GL_TRIANGLES, model.mesh.indices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        for (Model model : scene->models) {
+            //use shaders
+            m_shaderProgram.Use();
+            m_shaderProgram.UploadUniformMat4("model", model.transform);
+            m_shaderProgram.UploadUniformMat4("view", scene->camera.view);
+            glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+            m_shaderProgram.UploadUniformMat4("projection", projection);
 
-        //reset
-        glUseProgram(0);
-        m_frameBuffer.Unbind();
+            //draw to viewport
+            glBindVertexArray(m_vao.id);
+            glDrawElements(GL_TRIANGLES, model.mesh.indices.size(), GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+
+            //reset
+            glUseProgram(0);
+        }
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         m_frameBuffer.Unbind();
     }
 

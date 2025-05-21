@@ -9,13 +9,17 @@
 #include "../core/window.h"
 #include "vulkan/vulkan_core.h"
 
+namespace ProtoCADScene {
+    class Scene;
+}
+
 namespace ProtoCADGraphics {
     GraphicsInstance::GraphicsInstance(ApplicationGraphicsAPI API) {
         m_API = API;
         m_currentAPI = nullptr;
     }
 
-    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
+    void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) {
         if (m_API == VULKAN) {
             m_currentAPI = std::make_shared<VulkanAPI>();
             ProtoCADCore::Logging::Log("creating vulkan API instance");
@@ -25,7 +29,7 @@ namespace ProtoCADGraphics {
             ProtoCADCore::Logging::Log("creating opengl API instance");
         }
 
-        m_currentAPI->Initialize(window, mesh);
+        m_currentAPI->Initialize(window, scene);
     }
 
     void GraphicsInstance::UpdateMesh(Mesh mesh, MeshUpdateType updateType) {
@@ -69,8 +73,8 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void GraphicsInstance::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
-        m_currentAPI->BeginDrawFrame(model, view, fov, viewport);
+    void GraphicsInstance::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
+        m_currentAPI->BeginDrawFrame(scene, viewport);
     }
 
     void GraphicsInstance::EndDrawFrame() {

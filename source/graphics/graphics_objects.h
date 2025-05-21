@@ -18,6 +18,7 @@ namespace ProtoCADGraphics {
     struct Vertex {
         glm::vec3 position;
         glm::vec3 color;
+        glm::vec2 texCoord;
     };
 
     struct Mesh {
@@ -34,5 +35,20 @@ namespace ProtoCADGraphics {
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 projection;
+    };
+
+    struct DefaultQuad : Mesh {
+        DefaultQuad() {
+            vertices = {
+                {{-1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+                {{1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+                {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+                {{-1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+            };
+
+            indices = {
+                0, 1, 2, 2, 3, 0
+            };
+        }
     };
 }

@@ -193,8 +193,8 @@ namespace ProtoCADGraphics {
         void UpdateVertexBuffer(std::vector<Vertex> vertices);
         void UpdateIndexBuffer(std::vector<uint32_t> indices);
 
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
-        void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) override;
+        void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) override;
         void EndDrawFrame() override;
         void CleanUp() override;
 

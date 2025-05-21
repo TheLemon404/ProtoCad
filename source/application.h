@@ -13,7 +13,7 @@
 #include "editor/gui_layer.h"
 #include "graphics/graphics_core.h"
 #include "graphics/graphics_objects.h"
-#include "scene/environment.h"
+#include "scene/scene.h"
 
 using ProtoCADCore::Window;
 using ProtoCADGraphics::GraphicsInstance;
@@ -40,6 +40,7 @@ public:
 
     ProtoCADGraphics::Model model;
     ProtoCADScene::Camera camera;
+    ProtoCADScene::Scene scene;
 
     Application(ApplicationGraphicsAPI api);
 

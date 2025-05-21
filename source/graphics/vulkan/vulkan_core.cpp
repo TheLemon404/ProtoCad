@@ -19,7 +19,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../../scene/environment.h"
+#include "../../scene/scene.h"
 
 namespace ProtoCADGraphics {
     bool VulkanAPI::CheckValidationLayerSupport() {
@@ -937,7 +937,7 @@ namespace ProtoCADGraphics {
     }
 
 
-    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) {
+    void VulkanAPI::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) {
         p_window = window->GetGLFWWindow();
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -1012,8 +1012,8 @@ namespace ProtoCADGraphics {
         m_currentPipeline = std::make_shared<UnlitVulkanPipeline>(m_device, m_swapChainExtent, m_swapChainImageFormat, m_descriptorSetLayout);
         CreateFrameBuffers();
         CreateCommandPool();
-        CreateVertexBuffer(mesh.vertices);
-        CreateIndexBuffer(mesh.indices);
+        CreateVertexBuffer(scene->models[0].mesh.vertices);
+        CreateIndexBuffer(scene->models[0].mesh.indices);
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSets();
@@ -1021,7 +1021,7 @@ namespace ProtoCADGraphics {
         CreateSyncObjects();
     }
 
-    void VulkanAPI::BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) {
+    void VulkanAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
         vkWaitForFences(m_device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         t_swapChainOutOfDateResult = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &t_imageIndex);
@@ -1034,11 +1034,13 @@ namespace ProtoCADGraphics {
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        UpdateUniformBuffer(currentFrame, model.transform, view, fov);
+        for (Model model : scene->models) {
+            UpdateUniformBuffer(currentFrame, model.transform, scene->camera.view, scene->camera.fov);
 
-        vkResetFences(m_device, 1, &inFlightFences[currentFrame]);
-        vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
-        BeginRecordCommandBuffer(m_commandBuffers[currentFrame], t_imageIndex, model.mesh);
+            vkResetFences(m_device, 1, &inFlightFences[currentFrame]);
+            vkResetCommandBuffer(m_commandBuffers[currentFrame], 0);
+            BeginRecordCommandBuffer(m_commandBuffers[currentFrame], t_imageIndex, model.mesh);
+        }
     }
 
     void VulkanAPI::EndDrawFrame() {

@@ -2,7 +2,7 @@
 // Created by Osprey on 5/18/2025.
 //
 
-#include "environment.h"
+#include "scene.h"
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -12,7 +12,7 @@ namespace ProtoCADScene {
         view = glm::lookAt(position, target, up);
     }
 
-    void Environment::Update() {
+    void Scene::Update() {
         camera.UpdateMatrices();
     }
 }

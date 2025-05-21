@@ -50,6 +50,8 @@ namespace ProtoCADGraphics {
     struct VAO {
         unsigned int id;
         std::shared_ptr<VBO> vbo;
+        std::shared_ptr<VBO> cbo;
+        std::shared_ptr<VBO> ubo;
         std::shared_ptr<IBO> ibo;
 
         void Bind();
@@ -126,6 +128,7 @@ namespace ProtoCADGraphics {
         //vertex utils
         std::vector<float> ExtractVertexPositions(std::vector<Vertex> vertices);
         std::vector<float> ExtractVertexColors(std::vector<Vertex> vertices);
+        std::vector<float> ExtractVertexTexCoords(std::vector<Vertex> vertices);
 
         //shaders
         ShaderObject m_vertexShader;
@@ -146,9 +149,28 @@ namespace ProtoCADGraphics {
         //textures
         Texture CreateTexture();
 
+        //background assets
+        DefaultQuad m_defaultQuad;
+        VAO m_quadVao;
+        VBO m_quadVbo;
+        VBO m_quadCbo;
+        VBO m_quadUbo;
+        IBO m_quadIbo;
+
+        ShaderObject m_screenSpaceVertexShader;
+        ShaderObject m_checkeredFragmentShader;
+        ShaderProgram m_checkeredProgram;
+
+        ShaderObject m_gridVertexShader;
+        ShaderObject m_gridFragmentShader;
+        ShaderProgram m_gridProgram;
+
+        void DrawGrid(glm::vec2 viewport, ProtoCADScene::Camera camera);
+        void DrawCheckeredBackground(glm::vec2 viewport);
+
     public:
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
-        void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) override;
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) override;
+        void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) override;
         void EndDrawFrame() override;
         void CleanUp() override;
         int GetViewportRenderTexture() override { return m_renderTexture.id; }

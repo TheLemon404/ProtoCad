@@ -13,8 +13,13 @@
 
 #endif //CAMERA_H
 
+namespace ProtoCADGraphics {
+    struct Model;
+}
+
 namespace ProtoCADScene {
     struct Camera {
+        float fov = 70;
         glm::vec3 target;
         glm::vec3 position = {2.0f, 2.0f, 2.0f};
         glm::vec3 rotation;
@@ -24,9 +29,11 @@ namespace ProtoCADScene {
         void UpdateMatrices();
     };
 
-    class Environment {
+    class Scene {
     public:
         Camera camera;
+
+        std::vector<ProtoCADGraphics::Model> models;
 
         void Update();
     };

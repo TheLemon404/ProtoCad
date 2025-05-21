@@ -12,6 +12,7 @@
 #include "../core/window.h"
 #include "graphics_objects.h"
 #include "../types.h"
+#include "../scene/scene.h"
 
 #endif //GRAPHICS_CORE_H
 
@@ -26,8 +27,8 @@ namespace ProtoCADGraphics {
     public:
         virtual ~GraphicsAPI() = default;
 
-        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) = 0;
-        virtual void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport) = 0;
+        virtual void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) = 0;
+        virtual void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) = 0;
         virtual void EndDrawFrame() = 0;
         virtual void CleanUp() = 0;
 
@@ -43,8 +44,8 @@ namespace ProtoCADGraphics {
     public:
         GraphicsInstance(ApplicationGraphicsAPI API);
 
-        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh);
-        void BeginDrawFrame(Model model, glm::mat4 view, float fov, glm::vec2 viewport);
+        void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene);
+        void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene>, glm::vec2 viewport);
         void EndDrawFrame();
         void CleanUp();
         void UpdateMesh(Mesh mesh,  MeshUpdateType updateType = UPDATE_ALL_BUFFERS);

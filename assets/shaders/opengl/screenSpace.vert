@@ -12,7 +12,7 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 texCoords;
 
 void main() {
-    gl_Position = projection * view * model * vec4(inPosition, 1.0);
+    gl_Position = vec4(inPosition, 1.0);
     fragColor = inColor;
     texCoords = uvs;
 }

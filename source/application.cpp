@@ -29,9 +29,15 @@ void Application::Initialize() {
     //temporary (debugging purposes)
     model = {{vertices, indices}, glm::identity<glm::mat4>()};
     camera = {};
+    camera.fov = 80;
+    scene = {};
 
     window->Initialize(m_graphicsAPI);
-    graphics_instance->Initialize(window, model.mesh);
+
+    scene.models.push_back(model);
+    scene.camera = camera;
+
+    graphics_instance->Initialize(window, std::make_shared<ProtoCADScene::Scene>(scene));
 
     guiLayer = std::make_shared<GUILayer>(graphics_instance->GetAPI(), graphics_instance->GetAPIType());
     guiLayer->Initialize(window);
@@ -44,30 +50,21 @@ void Application::Run() {
         window->Poll();
 
         //temporary (debugging purposes)
-        camera.UpdateMatrices();
+        scene.camera.UpdateMatrices();
         if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && model.mesh.vertices[0].color.x == 0.0f) {
 
-            model.mesh.vertices = {
-                {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
-            };
+            scene.models[0].mesh = ProtoCADGraphics::DefaultQuad{};
 
-            model.mesh.indices = {
-                0, 1, 2, 2, 3, 0
-            };
-
-            graphics_instance->UpdateMesh(model.mesh);
+            graphics_instance->UpdateMesh( scene.models[0].mesh);
         }
 
         //render loop
-        graphics_instance->BeginDrawFrame(model, camera.view, 45, guiLayer->GetViewportWindowSize());
+        graphics_instance->BeginDrawFrame(std::make_shared<ProtoCADScene::Scene>(scene), guiLayer->GetViewportWindowSize());
         guiLayer->Draw();
         graphics_instance->EndDrawFrame();
 
         //temporary (debugging purposes)
-        model.transform = glm::rotate(model.transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
+        scene.models[0].transform = glm::rotate(scene.models[0].transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
     }
 
     graphics_instance->CleanUp();
