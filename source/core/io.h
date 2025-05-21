@@ -15,7 +15,8 @@
 namespace ProtoCADCore {
     class IO {
     public:
-        static std::vector<char> ReadFile(const std::string& filename);
+        static std::vector<char> ReadFileSPV(const std::string& filename);
+        static const char* ReadFileGLSL(const std::string& filename);
     };
 }
 

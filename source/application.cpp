@@ -11,7 +11,12 @@
 using ProtoCADCore::Logging;
 
 Application::Application(ApplicationGraphicsAPI api) {
-    window = std::make_shared<Window>("ProtoCAD", 800, 600);
+    if (api == VULKAN) {
+        window = std::make_shared<Window>("ProtoCAD Vulkan", 800, 600);
+    }
+    else if (api == OPENGL) {
+        window = std::make_shared<Window>("ProtoCAD OpenGL", 800, 600);
+    }
     graphics_instance = std::make_shared<GraphicsInstance>(api);
 
     m_graphicsAPI = api;

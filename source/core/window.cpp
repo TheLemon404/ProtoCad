@@ -26,6 +26,10 @@ namespace ProtoCADCore {
         auto win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         win->m_width = width;
         win->m_height = height;
+
+        if (win->m_api == OPENGL) {
+            glViewport(0, 0, width, height);
+        }
     }
 
 

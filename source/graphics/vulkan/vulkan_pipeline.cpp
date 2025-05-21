@@ -25,8 +25,8 @@ namespace ProtoCADGraphics {
         p_device = device;
         p_swapChainImageFormat = renderPassFormat;
 
-        auto vertShaderCode = ProtoCADCore::IO::ReadFile(vertexShaderPath);
-        auto fragShaderCode = ProtoCADCore::IO::ReadFile(fragmentShaderPath);
+        auto vertShaderCode = ProtoCADCore::IO::ReadFileSPV(vertexShaderPath);
+        auto fragShaderCode = ProtoCADCore::IO::ReadFileSPV(fragmentShaderPath);
 
         m_vertShaderModule = CreateShaderModule(vertShaderCode);
         m_fragShaderModule = CreateShaderModule(fragShaderCode);
