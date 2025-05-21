@@ -54,6 +54,7 @@ namespace ProtoCADGraphics {
         }
         else if (m_API == OPENGL) {
             std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
+            ogl->UpdateVertexBuffer(vertices);
         }
     }
 
@@ -64,6 +65,7 @@ namespace ProtoCADGraphics {
         }
         else if (m_API == OPENGL) {
             std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
+            ogl->UpdateIndexBuffer(indices);
         }
     }
 

@@ -231,4 +231,25 @@ namespace ProtoCADGraphics {
     void OpenGLAPI::CleanUp() {
 
     }
+
+    void OpenGLAPI::UpdateVertexBuffer(std::vector<Vertex> vertices) {
+        glDeleteBuffers(1, &m_vbo.id);
+
+        //vertices
+        m_vbo = CreateVBO((int)vertices.size() * 3);
+        m_vbo.UploadData(ExtractVertexPositions(vertices));
+        m_vbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
+
+        m_cbo = CreateVBO((int)vertices.size() * 3);
+        m_cbo.UploadData(ExtractVertexColors(vertices));
+        m_cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+    }
+
+    void OpenGLAPI::UpdateIndexBuffer(std::vector<uint32_t> indices) {
+        glDeleteBuffers(1, &m_ibo.id);
+
+        m_ibo = CreateIBO((int)indices.size());
+        m_ibo.UploadData(indices);
+    }
+
 }

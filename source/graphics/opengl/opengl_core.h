@@ -107,11 +107,12 @@ namespace ProtoCADGraphics {
         ShaderProgram CreateProgram();
 
     public:
-        void OnWindowResized(int width, int height);
-
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, Mesh mesh) override;
         void BeginDrawFrame(Model model, glm::mat4 view, float fov) override;
         void EndDrawFrame() override;
         void CleanUp() override;
+
+        void UpdateVertexBuffer(std::vector<Vertex> vertices);
+        void UpdateIndexBuffer(std::vector<uint32_t> indices);
     };
 }
