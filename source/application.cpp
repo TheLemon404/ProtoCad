@@ -13,60 +13,98 @@ using ProtoCADCore::Logging;
 
 Application::Application(ApplicationGraphicsAPI api) {
     if (api == VULKAN) {
-        window = std::make_shared<Window>("ProtoCAD Vulkan", 800, 600);
+        m_window = std::make_shared<Window>("ProtoCAD Vulkan", 800, 600);
     }
     else if (api == OPENGL) {
-        window = std::make_shared<Window>("ProtoCAD OpenGL", 800, 600);
+        m_window = std::make_shared<Window>("ProtoCAD OpenGL", 800, 600);
     }
 
-    graphics_instance = std::make_shared<GraphicsInstance>(api);
+    m_graphicsInstance = std::make_shared<GraphicsInstance>(api);
     m_graphicsAPI = api;
+}
+
+void Application::UpdateCameraPosition() {
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 cameraForward = glm::normalize(scene.camera.target - scene.camera.position);
+    glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraForward));
+    glm::vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
+
+    if (ProtoCADCore::Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS) {
+        if (ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
+            scene.camera.position += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraUp * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
+            scene.camera.target += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraUp * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
+        }
+        else if (ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
+
+            scene.camera.position += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
+            scene.camera.target += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
+        }
+        else {
+            scene.camera.RotateAround(-ProtoCADCore::Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), scene.camera.target);
+            scene.camera.RotateAround(ProtoCADCore::Input::mouseDelta.y / 500.0f, cameraRight, scene.camera.target);
+        }
+    }
+    else if (ProtoCADCore::Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS && ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT | GLFW_PRESS) {
+    }
+
+    scene.camera.position += (scene.camera.position - scene.camera.target) * (-ProtoCADCore::Input::mouseScrollVector.y / 20.0f);
+
 }
 
 void Application::Initialize() {
     Logging::Log("initializing application");
 
     //temporary (debugging purposes)
-    model = {{vertices, indices}, glm::identity<glm::mat4>()};
-    camera = {};
-    camera.fov = 80;
+    ProtoCADGraphics::Mesh mesh{};
+    mesh.vertices = vertices;
+    mesh.indices = indices;
+    model = {mesh, glm::identity<glm::mat4>()};
     scene = {};
 
-    window->Initialize(m_graphicsAPI);
+    ProtoCADGraphics::DefaultQuad quad{};
+
+    m_window->Initialize(m_graphicsAPI);
 
     scene.models.push_back(model);
-    scene.camera = camera;
+    scene.models.push_back({quad, glm::translate(glm::identity<glm::mat4>(), glm::vec3(2, 0, 0))});
 
-    graphics_instance->Initialize(window, std::make_shared<ProtoCADScene::Scene>(scene));
+    scene.camera = {};
+    scene.camera.fov = 80;
 
-    guiLayer = std::make_shared<GUILayer>(graphics_instance->GetAPI(), graphics_instance->GetAPIType());
-    guiLayer->Initialize(window);
+    m_graphicsInstance->Initialize(m_window, std::make_shared<ProtoCADScene::Scene>(scene));
+
+    m_guiLayer = std::make_shared<GUILayer>(m_graphicsInstance->GetAPI(), m_graphicsInstance->GetAPIType());
+    m_guiLayer->Initialize(m_window);
 }
 
 void Application::Run() {
     Logging::Log("running application");
 
-    while (!window->ShouldClose()) {
-        window->Poll();
+    while (!m_window->ShouldClose()) {
+        m_window->Poll();
+
+        UpdateCameraPosition();
+        scene.camera.UpdateMatrices();
 
         //temporary (debugging purposes)
-        scene.camera.UpdateMatrices();
         if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && model.mesh.vertices[0].color.x == 0.0f) {
 
             scene.models[0].mesh = ProtoCADGraphics::DefaultQuad{};
 
-            graphics_instance->UpdateMesh( scene.models[0].mesh);
+            m_graphicsInstance->UpdateMesh( std::make_shared<ProtoCADGraphics::Mesh>(scene.models[0].mesh));
         }
 
         //render loop
-        graphics_instance->BeginDrawFrame(std::make_shared<ProtoCADScene::Scene>(scene), guiLayer->GetViewportWindowSize());
-        guiLayer->Draw();
-        graphics_instance->EndDrawFrame();
+        m_graphicsInstance->BeginDrawFrame(std::make_shared<ProtoCADScene::Scene>(scene), m_guiLayer->GetViewportWindowSize());
+        m_guiLayer->Draw();
+        m_graphicsInstance->EndDrawFrame();
 
         //temporary (debugging purposes)
         scene.models[0].transform = glm::rotate(scene.models[0].transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
+
+        ProtoCADCore::Input::Refresh();
     }
 
-    graphics_instance->CleanUp();
-    window->Close();
+    m_graphicsInstance->CleanUp();
+    m_window->Close();
 }

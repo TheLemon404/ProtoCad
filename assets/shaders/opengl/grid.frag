@@ -18,12 +18,12 @@ vec4 grid(vec3 fragPos3D, float scale, bool drawAxis) {
     // z axis
     if(fragPos3D.x > -0.1 * minimumx && fragPos3D.x < 0.1 * minimumx)
     {
-        color = vec4(0, 0, 2, 2);
+        color = vec4(0, 0.8f, 0.2f, 1);
     }
     // x axis
     if(fragPos3D.z > -0.1 * minimumz && fragPos3D.z < 0.1 * minimumz)
     {
-        color = vec4(2, 0, 0, 2);
+        color = vec4(0.8f, 0, 0, 1);
     }
 
     return color;

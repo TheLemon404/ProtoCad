@@ -32,45 +32,8 @@ namespace ProtoCADGraphics {
         m_currentAPI->Initialize(window, scene);
     }
 
-    void GraphicsInstance::UpdateMesh(Mesh mesh, MeshUpdateType updateType) {
-        switch (updateType) {
-            case UPDATE_VERTEX_BUFFER:
-                UpdateVertexBuffer(mesh.vertices);
-                break;
-            case UPDATE_INDEX_BUFFER:
-                UpdateIndexBuffer(mesh.indices);
-                break;
-            case UPDATE_ALL_BUFFERS:
-                UpdateVertexBuffer(mesh.vertices);
-                UpdateIndexBuffer(mesh.indices);
-                break;
-            default:
-                UpdateVertexBuffer(mesh.vertices);
-                UpdateIndexBuffer(mesh.indices);
-                break;
-        }
-    }
-
-    void GraphicsInstance::UpdateVertexBuffer(std::vector<Vertex> vertices) {
-        if (m_API == VULKAN) {
-            std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
-            vk->UpdateVertexBuffer(vertices);
-        }
-        else if (m_API == OPENGL) {
-            std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
-            ogl->UpdateVertexBuffer(vertices);
-        }
-    }
-
-    void GraphicsInstance::UpdateIndexBuffer(std::vector<uint32_t> indices) {
-        if (m_API == VULKAN) {
-            std::shared_ptr<VulkanAPI> vk = std::static_pointer_cast<VulkanAPI>(m_currentAPI);
-            vk->UpdateIndexBuffer(indices);
-        }
-        else if (m_API == OPENGL) {
-            std::shared_ptr<OpenGLAPI> ogl = std::static_pointer_cast<OpenGLAPI>(m_currentAPI);
-            ogl->UpdateIndexBuffer(indices);
-        }
+    void GraphicsInstance::UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) {
+        m_currentAPI->UpdateMesh(mesh, updateType);
     }
 
     void GraphicsInstance::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {

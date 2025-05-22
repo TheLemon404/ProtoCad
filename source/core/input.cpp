@@ -26,10 +26,14 @@ namespace ProtoCADCore {
     }
 
     void Input::GLFWSetCursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
+        mouseDelta.x = xpos - mousePosition.x;
+        mouseDelta.y = ypos - mousePosition.y;
         mousePosition.x = static_cast<float>(xpos);
         mousePosition.y = static_cast<float>(ypos);
     }
 
     void Input::Refresh() {
+        mouseScrollVector = glm::vec2(0, 0);
+        mouseDelta = glm::vec2(0, 0);
     }
 }

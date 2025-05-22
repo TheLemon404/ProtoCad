@@ -166,10 +166,10 @@ namespace ProtoCADGraphics {
         return vao;
     }
 
-    VBO OpenGLAPI::CreateVBO(int numVertices) {
+    VBO OpenGLAPI::CreateVBO(int numEntries) {
         VBO vbo{};
         glGenBuffers(1, &vbo.id);
-        vbo.vertexCount = numVertices;
+        vbo.vertexCount = numEntries;
         return vbo;
     }
 
@@ -264,8 +264,6 @@ namespace ProtoCADGraphics {
         m_checkeredProgram.Use();
 
         m_checkeredProgram.UploadUniformVec2("resolution", viewport);
-        m_checkeredProgram.UploadUniformFloat("darkGrey", 0.05f);
-        m_checkeredProgram.UploadUniformFloat("lightGrey", 0.1f);
 
         glBindVertexArray(m_quadVao.id);
         glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);
@@ -277,8 +275,7 @@ namespace ProtoCADGraphics {
     void OpenGLAPI::DrawGrid(glm::vec2 viewport, ProtoCADScene::Camera camera) {
         m_gridProgram.Use();
 
-        glm::mat4 view = glm::lookAt(camera.position, camera.target, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_gridProgram.UploadUniformMat4("view", view);
+        m_gridProgram.UploadUniformMat4("view", camera.view);
         glm::mat4 projection = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
         m_gridProgram.UploadUniformMat4("projection", projection);
 
@@ -337,44 +334,49 @@ namespace ProtoCADGraphics {
         m_quadVao.Unbind();
 
         //initialize shaders
-        m_vertexShader = CreateShader(VERTEX_SHADER);
-        m_vertexShader.Load("./assets/shaders/opengl/unlit.vert");
+        m_unlitVertexShader = CreateShader(VERTEX_SHADER);
+        m_unlitVertexShader.Load("./assets/shaders/opengl/unlit.vert");
         m_screenSpaceVertexShader = CreateShader(VERTEX_SHADER);
         m_screenSpaceVertexShader.Load("./assets/shaders/opengl/screenSpace.vert");
         m_gridVertexShader = CreateShader(VERTEX_SHADER);
         m_gridVertexShader.Load("./assets/shaders/opengl/grid.vert");
-        m_fragmentShader = CreateShader(FRAGMENT_SHADER);
-        m_fragmentShader.Load("./assets/shaders/opengl/unlit.frag");
+        m_unlitFragmentShader = CreateShader(FRAGMENT_SHADER);
+        m_unlitFragmentShader.Load("./assets/shaders/opengl/unlit.frag");
         m_checkeredFragmentShader = CreateShader(FRAGMENT_SHADER);
         m_checkeredFragmentShader.Load("./assets/shaders/opengl/checkers.frag");
         m_gridFragmentShader = CreateShader(FRAGMENT_SHADER);
         m_gridFragmentShader.Load("./assets/shaders/opengl/grid.frag");
 
-        m_shaderProgram = CreateProgram();
-        m_shaderProgram.Load(std::shared_ptr<ShaderObject>(&m_vertexShader), std::shared_ptr<ShaderObject>(&m_fragmentShader));
+        m_unlitShaderProgram = CreateProgram();
+        m_unlitShaderProgram.Load(std::shared_ptr<ShaderObject>(&m_unlitVertexShader), std::shared_ptr<ShaderObject>(&m_unlitFragmentShader));
         m_checkeredProgram = CreateProgram();
         m_checkeredProgram.Load(std::shared_ptr<ShaderObject>(&m_screenSpaceVertexShader), std::shared_ptr<ShaderObject>(&m_checkeredFragmentShader));
         m_gridProgram = CreateProgram();
         m_gridProgram.Load(std::shared_ptr<ShaderObject>(&m_gridVertexShader), std::shared_ptr<ShaderObject>(&m_gridFragmentShader));
 
-        //initialize vertex data
-        m_vao = CreateVAO();
+        for (Model model : scene->models) {
+            if (!m_sceneVAOs.contains(model.mesh.id)) {
+                //initialize vertex data
+                m_sceneVAOs[model.mesh.id] = CreateVAO();
 
-        m_vbo = CreateVBO((int)scene->models[0].mesh.vertices.size() * 3);
-        m_vbo.UploadData(ExtractVertexPositions(scene->models[0].mesh.vertices));
-        m_vbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
+                m_sceneVBOs[model.mesh.id] = CreateVBO((int)model.mesh.vertices.size() * 3);
+                m_sceneVBOs[model.mesh.id].UploadData(ExtractVertexPositions(model.mesh.vertices));
+                m_sceneVBOs[model.mesh.id].CreateVertexAttribPointer(0, 3, GL_FLOAT);
 
-        m_cbo = CreateVBO((int)scene->models[0].mesh.vertices.size() * 3);
-        m_cbo.UploadData(ExtractVertexColors(scene->models[0].mesh.vertices));
-        m_cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+                m_sceneCBOs[model.mesh.id] = CreateVBO((int)model.mesh.vertices.size() * 3);
+                m_sceneCBOs[model.mesh.id].UploadData(ExtractVertexColors(model.mesh.vertices));
+                m_sceneCBOs[model.mesh.id].CreateVertexAttribPointer(1, 3, GL_FLOAT);
 
-        m_ibo = CreateIBO((int)scene->models[0].mesh.indices.size());
-        m_ibo.UploadData(scene->models[0].mesh.indices);
+                m_sceneIBOs[model.mesh.id] = CreateIBO((int)model.mesh.indices.size());
+                m_sceneIBOs[model.mesh.id].UploadData(model.mesh.indices);
 
-        m_vao.vbo = std::make_shared<VBO>(m_vbo);
-        m_vao.ibo = std::make_shared<IBO>(m_ibo);
+                m_sceneVAOs[model.mesh.id].vbo = std::make_shared<VBO>(m_sceneVBOs[model.mesh.id]);
+                m_sceneVAOs[model.mesh.id].cbo = std::make_shared<VBO>(m_sceneCBOs[model.mesh.id]);
+                m_sceneVAOs[model.mesh.id].ibo = std::make_shared<IBO>(m_sceneIBOs[model.mesh.id]);
 
-        m_vao.Unbind();
+                m_sceneVAOs[model.mesh.id].Unbind();
+            }
+        }
     }
 
     void OpenGLAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
@@ -394,15 +396,15 @@ namespace ProtoCADGraphics {
 
         for (Model model : scene->models) {
             //use shaders
-            m_shaderProgram.Use();
-            m_shaderProgram.UploadUniformMat4("model", model.transform);
-            m_shaderProgram.UploadUniformMat4("view", scene->camera.view);
+            m_unlitShaderProgram.Use();
+            m_unlitShaderProgram.UploadUniformMat4("model", model.transform);
+            m_unlitShaderProgram.UploadUniformMat4("view", scene->camera.view);
             glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
-            m_shaderProgram.UploadUniformMat4("projection", projection);
+            m_unlitShaderProgram.UploadUniformMat4("projection", projection);
 
             //draw to viewport
-            glBindVertexArray(m_vao.id);
-            glDrawElements(GL_TRIANGLES, model.mesh.indices.size(), GL_UNSIGNED_INT, 0);
+            glBindVertexArray(m_sceneVAOs[model.mesh.id].id);
+            glDrawElements(GL_TRIANGLES, m_sceneIBOs[model.mesh.id].indexCount, GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
 
             //reset
@@ -420,39 +422,107 @@ namespace ProtoCADGraphics {
     }
 
     void OpenGLAPI::CleanUp() {
-        m_vao.Delete();
-        m_vbo.Delete();
-        m_cbo.Delete();
-        m_ibo.Delete();
+        for (auto it : m_sceneVAOs) {
+            it.second.Delete();
+        }
+        for (auto it : m_sceneVBOs) {
+            it.second.Delete();
+        }
+        for (auto it : m_sceneCBOs) {
+            it.second.Delete();
+        }
+        for (auto it : m_sceneUBOs) {
+            it.second.Delete();
+        }
+        for (auto it : m_sceneIBOs) {
+            it.second.Delete();
+        }
+
         m_frameBuffer.Delete();
         m_renderTexture.Delete();
-        m_shaderProgram.CleanUp();
+
+        m_unlitShaderProgram.CleanUp();
+        m_checkeredProgram.CleanUp();
+        m_gridProgram.CleanUp();
     }
 
-    void OpenGLAPI::UpdateVertexBuffer(std::vector<Vertex> vertices) {
-        glDeleteBuffers(1, &m_vbo.id);
-        m_vao.Bind();
+    void OpenGLAPI::UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) {
+        switch (updateType) {
+            case UPDATE_ALL_BUFFERS: {
+                std::vector<Vertex> vertices = mesh->vertices;
+                std::vector<uint32_t> indices = mesh->indices;
 
-        //vertices
-        m_vbo = CreateVBO((int)vertices.size() * 3);
-        m_vbo.UploadData(ExtractVertexPositions(vertices));
-        m_vbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
+                glDeleteBuffers(1, &m_sceneVBOs[mesh->id].id);
+                glDeleteBuffers(1, &m_sceneCBOs[mesh->id].id);
+                glDeleteBuffers(1, &m_sceneUBOs[mesh->id].id);
+                glDeleteBuffers(1, &m_sceneIBOs[mesh->id].id);
 
-        m_cbo = CreateVBO((int)vertices.size() * 3);
-        m_cbo.UploadData(ExtractVertexColors(vertices));
-        m_cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+                m_sceneVAOs[mesh->id].Bind();
 
-        m_vao.Unbind();
+                //vertices
+                m_sceneVBOs[mesh->id] = CreateVBO((int)vertices.size() * 3);
+                m_sceneVBOs[mesh->id].UploadData(ExtractVertexPositions(vertices));
+                m_sceneVBOs[mesh->id].CreateVertexAttribPointer(0, 3, GL_FLOAT);
+
+                m_sceneCBOs[mesh->id] = CreateVBO((int)vertices.size() * 3);
+                m_sceneCBOs[mesh->id].UploadData(ExtractVertexColors(vertices));
+                m_sceneCBOs[mesh->id].CreateVertexAttribPointer(1, 3, GL_FLOAT);
+
+                m_sceneUBOs[mesh->id] = CreateVBO((int)vertices.size() * 2);
+                m_sceneUBOs[mesh->id].UploadData(ExtractVertexTexCoords(vertices));
+                m_sceneUBOs[mesh->id].CreateVertexAttribPointer(2, 2, GL_FLOAT);
+
+                //indices
+                m_sceneIBOs[mesh->id] = CreateIBO((int)indices.size());
+                m_sceneIBOs[mesh->id].UploadData(indices);
+
+                m_sceneVAOs[mesh->id].Unbind();
+            }
+            case UPDATE_VERTEX_BUFFER: {
+                std::vector<Vertex> vertices = mesh->vertices;
+
+                VAO vao = m_sceneVAOs[mesh->id];
+                VBO vbo = m_sceneVBOs[mesh->id];
+                VBO cbo = m_sceneCBOs[mesh->id];
+                VBO ubo = m_sceneUBOs[mesh->id];
+
+                glDeleteBuffers(1, &vbo.id);
+                glDeleteBuffers(1, &cbo.id);
+                glDeleteBuffers(1, &ubo.id);
+
+                vao.Bind();
+
+                //vertices
+                vbo = CreateVBO((int)vertices.size() * 3);
+                vbo.UploadData(ExtractVertexPositions(vertices));
+                vbo.CreateVertexAttribPointer(0, 3, GL_FLOAT);
+
+                cbo = CreateVBO((int)vertices.size() * 3);
+                cbo.UploadData(ExtractVertexColors(vertices));
+                cbo.CreateVertexAttribPointer(1, 3, GL_FLOAT);
+
+                ubo = CreateVBO((int)vertices.size() * 2);
+                ubo.UploadData(ExtractVertexTexCoords(vertices));
+                ubo.CreateVertexAttribPointer(2, 2, GL_FLOAT);
+
+                vao.Unbind();
+            }
+            case UPDATE_INDEX_BUFFER: {
+                std::vector<uint32_t> indices = mesh->indices;
+
+                VAO vao = m_sceneVAOs[mesh->id];
+                IBO ibo = m_sceneIBOs[mesh->id];
+
+                glDeleteBuffers(1, &ibo.id);
+
+                vao.Bind();
+
+                //indices
+                ibo = CreateIBO((int)indices.size());
+                ibo.UploadData(indices);
+
+                vao.Unbind();
+            }
+        }
     }
-
-    void OpenGLAPI::UpdateIndexBuffer(std::vector<uint32_t> indices) {
-        m_ibo.Delete();
-        m_vao.Bind();
-
-        m_ibo = CreateIBO((int)indices.size());
-        m_ibo.UploadData(indices);
-
-        m_vao.Unbind();
-    }
-
 }

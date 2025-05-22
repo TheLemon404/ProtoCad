@@ -23,9 +23,10 @@ namespace ProtoCADScene {
         glm::vec3 target;
         glm::vec3 position = {2.0f, 2.0f, 2.0f};
         glm::vec3 rotation;
-        glm::vec3 up = {0.0f, 0.0f, 1.0f};
+        glm::vec3 up = {0.0f, 1.0f, 0.0f};
         glm::mat4 view;
 
+        void RotateAround( float angle, glm::vec3 axis, glm::vec3 originPoint);
         void UpdateMatrices();
     };
 

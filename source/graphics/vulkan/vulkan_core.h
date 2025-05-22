@@ -190,8 +190,7 @@ namespace ProtoCADGraphics {
         void CreateViewportSamplers();
 
     public:
-        void UpdateVertexBuffer(std::vector<Vertex> vertices);
-        void UpdateIndexBuffer(std::vector<uint32_t> indices);
+        void UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) override;
 
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) override;
         void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) override;

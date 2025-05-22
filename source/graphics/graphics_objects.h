@@ -22,8 +22,11 @@ namespace ProtoCADGraphics {
     };
 
     struct Mesh {
+        unsigned int id;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
+
+        Mesh() { id = rand(); }
     };
 
     struct Model {

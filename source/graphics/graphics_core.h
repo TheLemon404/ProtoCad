@@ -33,6 +33,8 @@ namespace ProtoCADGraphics {
         virtual void CleanUp() = 0;
 
         virtual int GetViewportRenderTexture() = 0;
+
+        virtual void UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) = 0;
     };
 
     class GraphicsInstance
@@ -48,12 +50,8 @@ namespace ProtoCADGraphics {
         void BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene>, glm::vec2 viewport);
         void EndDrawFrame();
         void CleanUp();
-        void UpdateMesh(Mesh mesh,  MeshUpdateType updateType = UPDATE_ALL_BUFFERS);
+        void UpdateMesh(std::shared_ptr<Mesh> mesh,  MeshUpdateType updateType = UPDATE_ALL_BUFFERS);
         ApplicationGraphicsAPI GetAPIType() { return m_API; }
         std::shared_ptr<GraphicsAPI> GetAPI() { return m_currentAPI; }
-
-    private:
-        void UpdateVertexBuffer(std::vector<Vertex> vertices);
-        void UpdateIndexBuffer(std::vector<uint32_t> indices);
     };
 }

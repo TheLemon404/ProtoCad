@@ -7,6 +7,7 @@
 #ifndef GL_CORE_H
 #define GL_CORE_H
 
+#include <map>
 #include <glad/glad.h>
 #include "../graphics_core.h"
 
@@ -114,11 +115,12 @@ namespace ProtoCADGraphics {
     private:
         std::shared_ptr<ProtoCADCore::Window> p_window;
 
-        //buffers
-        VAO m_vao;
-        VBO m_vbo;
-        VBO m_cbo;
-        IBO m_ibo;
+        //scene buffers
+        std::map<unsigned int, VAO> m_sceneVAOs;
+        std::map<unsigned int, VBO> m_sceneVBOs;
+        std::map<unsigned int, VBO> m_sceneCBOs;
+        std::map<unsigned int, VBO> m_sceneUBOs;
+        std::map<unsigned int, IBO> m_sceneIBOs;
 
         VAO CreateVAO();
 
@@ -130,10 +132,10 @@ namespace ProtoCADGraphics {
         std::vector<float> ExtractVertexColors(std::vector<Vertex> vertices);
         std::vector<float> ExtractVertexTexCoords(std::vector<Vertex> vertices);
 
-        //shaders
-        ShaderObject m_vertexShader;
-        ShaderObject m_fragmentShader;
-        ShaderProgram m_shaderProgram;
+        //scene shaders
+        ShaderObject m_unlitVertexShader;
+        ShaderObject m_unlitFragmentShader;
+        ShaderProgram m_unlitShaderProgram;
 
         ShaderObject CreateShader(ShaderType type);
         ShaderProgram CreateProgram();
@@ -175,8 +177,6 @@ namespace ProtoCADGraphics {
         void CleanUp() override;
         int GetViewportRenderTexture() override { return m_renderTexture.id; }
 
-        void UpdateVertexBuffer(std::vector<Vertex> vertices);
-        void UpdateIndexBuffer(std::vector<uint32_t> indices);
-
+        void UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) override;
     };
 }

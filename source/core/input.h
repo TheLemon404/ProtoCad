@@ -18,6 +18,7 @@ namespace ProtoCADCore {
     public:
         static inline glm::vec2 mouseScrollVector;
         static inline glm::vec2 mousePosition;
+        static inline glm::vec2 mouseDelta;
 
         static inline std::map<int, int> keyStates;
         static inline std::map<int, int> mouseButtonStates;

@@ -4,8 +4,6 @@ layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 texCoords;
 
 uniform vec2 resolution;
-uniform float darkGrey;
-uniform float lightGrey;
 
 layout(location = 0) out vec4 outColor;
 
@@ -24,8 +22,8 @@ void main() {
     uv.x *= resolution.x / resolution.y;
 
     //50x50 checkered background
-    float gray = mix(darkGrey, lightGrey, checker(uv, 50.0));
+    float gray = mix(0.05f, 0.06f, checker(uv, 50.0));
 
-    outColor.rgb = vec3(gray);
+    outColor.rgb = vec3(gray, gray, gray + 0.02f);
     outColor.a = 1.0;
 }

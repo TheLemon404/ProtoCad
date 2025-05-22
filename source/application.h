@@ -22,10 +22,10 @@ using ProtoCADGUI::GUILayer;
 #endif //APPLICATION_H
 
 class Application {
-public:
-    std::shared_ptr<GraphicsInstance> graphics_instance;
-    std::shared_ptr<Window> window;
-    std::shared_ptr<GUILayer> guiLayer;
+private:
+    std::shared_ptr<GraphicsInstance> m_graphicsInstance;
+    std::shared_ptr<Window> m_window;
+    std::shared_ptr<GUILayer> m_guiLayer;
     ApplicationGraphicsAPI m_graphicsAPI;
 
     std::vector<ProtoCADGraphics::Vertex> vertices = {
@@ -39,9 +39,11 @@ public:
     };
 
     ProtoCADGraphics::Model model;
-    ProtoCADScene::Camera camera;
     ProtoCADScene::Scene scene;
 
+    void UpdateCameraPosition();
+
+public:
     Application(ApplicationGraphicsAPI api);
 
     void Initialize();
