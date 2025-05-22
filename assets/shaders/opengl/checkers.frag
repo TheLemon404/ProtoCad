@@ -22,7 +22,7 @@ void main() {
     uv.x *= resolution.x / resolution.y;
 
     //50x50 checkered background
-    float gray = mix(0.05f, 0.06f, checker(uv, 50.0));
+    float gray = mix(0.05f, 0.07f, checker(uv, 50.0));
 
     outColor.rgb = vec3(gray, gray, gray + 0.02f);
     outColor.a = 1.0;

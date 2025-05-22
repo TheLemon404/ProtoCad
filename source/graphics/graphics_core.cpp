@@ -7,7 +7,6 @@
 
 #include "../core/logging.h"
 #include "../core/window.h"
-#include "vulkan/vulkan_core.h"
 
 namespace ProtoCADScene {
     class Scene;
@@ -20,11 +19,7 @@ namespace ProtoCADGraphics {
     }
 
     void GraphicsInstance::Initialize(std::shared_ptr<ProtoCADCore::Window> window, std::shared_ptr<ProtoCADScene::Scene> scene) {
-        if (m_API == VULKAN) {
-            m_currentAPI = std::make_shared<VulkanAPI>();
-            ProtoCADCore::Logging::Log("creating vulkan API instance");
-        }
-        else if (m_API == OPENGL) {
+        if (m_API == OPENGL) {
             m_currentAPI = std::make_shared<OpenGLAPI>();
             ProtoCADCore::Logging::Log("creating opengl API instance");
         }

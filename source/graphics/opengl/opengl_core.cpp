@@ -4,8 +4,6 @@
 
 #include "opengl_core.h"
 
-#include <minwindef.h>
-
 #include "../../core/io.h"
 #include "../../core/logging.h"
 #include "glm/ext/matrix_clip_space.hpp"
@@ -34,7 +32,7 @@ namespace ProtoCADGraphics {
     }
 
     void ShaderProgram::UploadUniformMat4(const char *uniformName, glm::mat4 value) {
-        glUniformMatrix4fv(glGetUniformLocation(id, uniformName), 1, FALSE, glm::value_ptr(value));
+        glUniformMatrix4fv(glGetUniformLocation(id, uniformName), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void ShaderProgram::Load(std::shared_ptr<ShaderObject> vertexShader, std::shared_ptr<ShaderObject> fragmentShader) {

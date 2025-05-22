@@ -12,4 +12,5 @@ int main() {
     Application app = Application(OPENGL);
     app.Initialize();
     app.Run();
+    return 0;
 }

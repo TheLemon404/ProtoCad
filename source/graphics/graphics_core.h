@@ -8,7 +8,6 @@
 #define GRAPHICS_CORE_H
 
 #include <memory>
-#include <vector>
 #include "../core/window.h"
 #include "graphics_objects.h"
 #include "../types.h"

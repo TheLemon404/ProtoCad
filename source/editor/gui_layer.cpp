@@ -24,30 +24,7 @@ namespace ProtoCADGUI {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         ImGui::StyleColorsDark();
 
-        if (p_graphicsAPIType == VULKAN){
-            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-
-            ImGui_ImplGlfw_InitForVulkan(window->GetGLFWWindow(), true);
-
-            ImGui_ImplVulkan_InitInfo init_info = {};
-            init_info.Instance = vkApi->GetInstance();
-            init_info.PhysicalDevice = vkApi->GetPhysicalDevice();
-            init_info.Device = vkApi->GetDevice();
-            init_info.QueueFamily = vkApi->FindQueueFamilies(vkApi->GetPhysicalDevice()).graphicsFamily.value();
-            init_info.Queue = vkApi->GetGraphicsQueue();
-            init_info.PipelineCache = VK_NULL_HANDLE;
-            init_info.DescriptorPool = vkApi->GetDescriptorPool();
-            init_info.Allocator = nullptr;
-            init_info.MinImageCount = 2;
-            init_info.ImageCount = vkApi->GetImageCount();
-            init_info.CheckVkResultFn = check_vk_result;
-            init_info.RenderPass = vkApi->GetCurrentPipeline()->GetRenderPass();
-
-            ImGui_ImplVulkan_Init(&init_info);
-
-            ImGui_ImplVulkan_CreateFontsTexture();
-        }
-        else if(p_graphicsAPIType == OPENGL) {
+        if(p_graphicsAPIType == OPENGL) {
             ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWWindow(), true);
             ImGui_ImplOpenGL3_Init("#version 450");
         }
@@ -56,13 +33,7 @@ namespace ProtoCADGUI {
     }
 
     void GUILayer::Draw() {
-        if (p_graphicsAPIType == VULKAN){
-            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-        }
-        else if (p_graphicsAPIType == OPENGL) {
+        if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
         }
@@ -94,21 +65,13 @@ namespace ProtoCADGUI {
 
         ImGui::Render();
 
-        if (p_graphicsAPIType == VULKAN) {
-            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkApi->GetCommandBuffers()[vkApi->currentFrame]);
-        }
-        else if (p_graphicsAPIType == OPENGL) {
+        if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
     }
 
     void GUILayer::CleanUp() {
-        if (p_graphicsAPIType == VULKAN) {
-            auto vkApi = std::static_pointer_cast<ProtoCADGraphics::VulkanAPI>(p_graphicsApi);
-            ImGui_ImplVulkan_Shutdown();
-        }
-        else if (p_graphicsAPIType == OPENGL) {
+        if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_Shutdown();
         }
 

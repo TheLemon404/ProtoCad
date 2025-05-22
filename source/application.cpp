@@ -8,7 +8,6 @@
 #include "core/logging.h"
 #include "core/clock.h"
 #include "glm/ext/matrix_transform.hpp"
-
 using ProtoCADCore::Logging;
 
 Application::Application(ApplicationGraphicsAPI api) {
@@ -35,9 +34,9 @@ void Application::UpdateCameraPosition() {
             scene.camera.target += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraUp * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
         }
         else if (ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
-
-            scene.camera.position += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
-            scene.camera.target += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
+            float distanceMagnifier = pow(glm::distance(scene.camera.target, scene.camera.position), 1.7f);
+            scene.camera.position += ((cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
+            scene.camera.target += ((cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraForward * ProtoCADCore::Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
         }
         else {
             scene.camera.RotateAround(-ProtoCADCore::Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), scene.camera.target);

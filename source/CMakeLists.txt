@@ -1,8 +1,10 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${PROJECT_NAME}")
-set(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++ -static")
 
+# opengl
 find_package(OpenGL REQUIRED)
+
+# libfive
 
 file(GLOB_RECURSE src CONFIGURE_DEPENDS "*.cpp" "*.h")
 add_executable(ProtoCAD ${src})

@@ -10,6 +10,7 @@
 #include <map>
 #include <glad/glad.h>
 #include "../graphics_core.h"
+#include <string>
 
 #endif //GL_CORE_H
 
