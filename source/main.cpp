@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iostream>
 #include <ostream>
-
 #include "application.h"
 
 int main() {

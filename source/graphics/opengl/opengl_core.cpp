@@ -274,7 +274,20 @@ namespace ProtoCADGraphics {
         m_gridProgram.Use();
 
         m_gridProgram.UploadUniformMat4("view", camera.view);
-        glm::mat4 projection = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+        glm::mat4 projection;
+        if (camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
+            projection = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+            m_gridProgram.UploadUniformInt("ortho", false);
+        }
+        else if (camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
+            float orthoWidth = (viewport.x / 1000) * camera.othoZoomFactor;
+            float orthoHeight = (viewport.y / 1000) * camera.othoZoomFactor;
+            projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
+            glm::mat4 perspective = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+            m_gridProgram.UploadUniformInt("ortho", true);
+
+
+        }
         m_gridProgram.UploadUniformMat4("projection", projection);
 
         glBindVertexArray(m_quadVao.id);
@@ -397,7 +410,15 @@ namespace ProtoCADGraphics {
             m_unlitShaderProgram.Use();
             m_unlitShaderProgram.UploadUniformMat4("model", model.transform);
             m_unlitShaderProgram.UploadUniformMat4("view", scene->camera.view);
-            glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+            glm::mat4 projection;
+            if (scene->camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
+                projection = glm::perspective(glm::radians(scene->camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+            }
+            else if (scene->camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
+                float orthoWidth = (viewport.x / 1000) * scene->camera.othoZoomFactor;
+                float orthoHeight = (viewport.y / 1000) * scene->camera.othoZoomFactor;
+                projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
+            }
             m_unlitShaderProgram.UploadUniformMat4("projection", projection);
 
             //draw to viewport

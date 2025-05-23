@@ -8,13 +8,11 @@
 #include "core/logging.h"
 #include "core/clock.h"
 #include "glm/ext/matrix_transform.hpp"
+
 using ProtoCADCore::Logging;
 
 Application::Application(ApplicationGraphicsAPI api) {
-    if (api == VULKAN) {
-        m_window = std::make_shared<Window>("ProtoCAD Vulkan", 800, 600);
-    }
-    else if (api == OPENGL) {
+    if (api == OPENGL) {
         m_window = std::make_shared<Window>("ProtoCAD OpenGL", 800, 600);
     }
 
@@ -27,6 +25,15 @@ void Application::UpdateCameraPosition() {
     glm::vec3 cameraForward = glm::normalize(scene.camera.target - scene.camera.position);
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraForward));
     glm::vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
+
+    if (ProtoCADCore::Input::keyStates[GLFW_KEY_V] == GLFW_PRESS) {
+        if (scene.camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
+            scene.camera.projection_mode = ProtoCADScene::PERSPECTIVE;
+        }
+        else if (scene.camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
+            scene.camera.projection_mode = ProtoCADScene::ORTHOGRAPHIC;
+        }
+    }
 
     if (ProtoCADCore::Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS) {
         if (ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
@@ -41,13 +48,13 @@ void Application::UpdateCameraPosition() {
         else {
             scene.camera.RotateAround(-ProtoCADCore::Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), scene.camera.target);
             scene.camera.RotateAround(ProtoCADCore::Input::mouseDelta.y / 500.0f, cameraRight, scene.camera.target);
+            scene.camera.rotation.x = glm::clamp(scene.camera.rotation.x, (float)-std::numbers::pi, (float)std::numbers::pi);
+            scene.camera.rotation.z = glm::clamp(scene.camera.rotation.z, (float)-std::numbers::pi, (float)std::numbers::pi);
         }
-    }
-    else if (ProtoCADCore::Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS && ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT | GLFW_PRESS) {
     }
 
     scene.camera.position += (scene.camera.position - scene.camera.target) * (-ProtoCADCore::Input::mouseScrollVector.y / 20.0f);
-
+    scene.camera.othoZoomFactor += (-ProtoCADCore::Input::mouseScrollVector.y / 10.0f);
 }
 
 void Application::Initialize() {

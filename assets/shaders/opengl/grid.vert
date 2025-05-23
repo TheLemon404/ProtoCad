@@ -20,11 +20,6 @@ vec3 UnprojectPoint(float x, float y, float z, mat4 view, mat4 projection) {
     return unprojectedPoint.xyz / unprojectedPoint.w;
 }
 
-vec3 ProjectedPoint(float x, float y, float z, mat4 view, mat4 projection) {
-    vec4 unprojectedPoint =  view * projection * vec4(x, y, z, 1.0);
-    return unprojectedPoint.xyz / unprojectedPoint.w;
-}
-
 void main() {
     vec3 p = inPosition;
     nearPoint = UnprojectPoint(p.x, p.y, 0.0, view, projection).xyz; // unprojecting on the near plane

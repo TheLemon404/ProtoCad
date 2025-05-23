@@ -13,6 +13,9 @@
 
 #endif //INPUT_H
 
+#define JUST_PRESSSED 500
+#define JUST_RELEASED 600
+
 namespace ProtoCADCore {
     class Input {
     public:

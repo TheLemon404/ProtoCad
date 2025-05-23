@@ -1,5 +1,7 @@
 #version 450
 
+uniform bool ortho;
+
 layout(location = 0) in vec3 nearPoint; // nearPoint calculated in vertex shader
 layout(location = 1) in vec3 farPoint; // farPoint calculated in vertex shader
 layout(location = 2) in mat4 fragView;
@@ -50,6 +52,13 @@ void main() {
     float linearDepth = computeLinearDepth(fragPos3D);
     float fading = max(0, (0.5 - linearDepth));
 
-    outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true)) * float(t > 0);// adding multiple resolution for the grid
+    if(ortho)
+    {
+        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true));// adding multiple resolution for the grid
+    }
+    else
+    {
+        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true)) * float(t > 0);// adding multiple resolution for the grid
+    }
     outColor.a *= fading;
 }

@@ -28,8 +28,7 @@ namespace ProtoCADCore {
         win->m_width = width;
         win->m_height = height;
     }
-
-
+    
     void Window::Initialize(ApplicationGraphicsAPI api) {
         m_api = api;
 
