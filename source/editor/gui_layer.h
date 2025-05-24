@@ -42,7 +42,7 @@ namespace ProtoCADGUI {
 
         GUILayer(std::shared_ptr<ProtoCADGraphics::GraphicsAPI> api, ApplicationGraphicsAPI apiType) : p_graphicsApi(api), p_graphicsAPIType(apiType) {};
         void Initialize(std::shared_ptr<ProtoCADCore::Window> window);
-        void Draw();
+        void Draw(ProtoCADScene::Scene& scene);
         void CleanUp();
     };
 }

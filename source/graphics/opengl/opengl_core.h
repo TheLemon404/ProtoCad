@@ -93,6 +93,9 @@ namespace ProtoCADGraphics {
         void Delete();
     };
 
+    struct RenderBuffer {
+        unsigned int id;
+    };
 
     struct ShaderProgram {
         unsigned int id;
@@ -145,7 +148,9 @@ namespace ProtoCADGraphics {
         FrameBuffer m_frameBuffer;
         Texture m_renderTexture;
 
+
         FrameBuffer CreateFrameBuffer();
+        RenderBuffer CreateRenderBuffer();
 
         void CreateRenderedFrameBuffer();
 

@@ -243,6 +243,18 @@ namespace ProtoCADGraphics {
         return frameBuffer;
     }
 
+    RenderBuffer OpenGLAPI::CreateRenderBuffer() {
+        RenderBuffer renderBuffer{};
+
+        glGenRenderbuffers(1, &renderBuffer.id);
+        glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer.id);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, p_window->GetDimensions().x, p_window->GetDimensions().y);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        return renderBuffer;
+    }
+
+
     Texture OpenGLAPI::CreateTexture() {
         Texture texture{};
         glGenTextures(1, &texture.id);
@@ -285,8 +297,6 @@ namespace ProtoCADGraphics {
             projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
             glm::mat4 perspective = glm::perspective(glm::radians(camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
             m_gridProgram.UploadUniformInt("ortho", true);
-
-
         }
         m_gridProgram.UploadUniformMat4("projection", projection);
 
@@ -306,17 +316,16 @@ namespace ProtoCADGraphics {
 
         glEnable(GL_CULL_FACE | GL_DEPTH_TEST);
         glCullFace(GL_BACK);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
 
         //initialize framebuffers and render texture
         m_frameBuffer = CreateFrameBuffer();
         m_renderTexture = CreateTexture();
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_renderTexture.id, 0);
-        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            ProtoCADCore::Logging::Error("failed to create framebuffer");
-        }
-
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            ProtoCADCore::Logging::Error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //initialize background assets
         m_defaultQuad = {};
 
@@ -391,13 +400,10 @@ namespace ProtoCADGraphics {
     }
 
     void OpenGLAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
-        //clear outside viewport
-        glClearColor(0, 0, 0, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         //begin viewport rendering
         m_frameBuffer.Bind();
         m_frameBuffer.Rescale(viewport.x, viewport.y, std::make_shared<Texture>(m_renderTexture));
+
         glViewport(0, 0, viewport.x, viewport.y);
         glClearColor(0, 0, 0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

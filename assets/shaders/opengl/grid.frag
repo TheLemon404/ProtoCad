@@ -54,11 +54,11 @@ void main() {
 
     if(ortho)
     {
-        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true));// adding multiple resolution for the grid
+        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true)) / (clamp(distance(vec3(0), fragPos3D) / 10, 1, 10000000));
     }
     else
     {
-        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true)) * float(t > 0);// adding multiple resolution for the grid
+        outColor = (grid(fragPos3D, 5, true) + grid(fragPos3D, 1, true)) * float(t > 0);
     }
     outColor.a *= fading;
 }

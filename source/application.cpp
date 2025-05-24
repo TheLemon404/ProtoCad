@@ -26,15 +26,6 @@ void Application::UpdateCameraPosition() {
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraForward));
     glm::vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
 
-    if (ProtoCADCore::Input::keyStates[GLFW_KEY_V] == GLFW_PRESS) {
-        if (scene.camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
-            scene.camera.projection_mode = ProtoCADScene::PERSPECTIVE;
-        }
-        else if (scene.camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
-            scene.camera.projection_mode = ProtoCADScene::ORTHOGRAPHIC;
-        }
-    }
-
     if (ProtoCADCore::Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS) {
         if (ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || ProtoCADCore::Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
             scene.camera.position += (cameraRight * ProtoCADCore::Input::mouseDelta.x + cameraUp * ProtoCADCore::Input::mouseDelta.y) / 200.0f;
@@ -55,6 +46,7 @@ void Application::UpdateCameraPosition() {
 
     scene.camera.position += (scene.camera.position - scene.camera.target) * (-ProtoCADCore::Input::mouseScrollVector.y / 20.0f);
     scene.camera.othoZoomFactor += (-ProtoCADCore::Input::mouseScrollVector.y / 10.0f);
+    scene.camera.othoZoomFactor = std::clamp(scene.camera.othoZoomFactor, 0.0001f, 1000000.0f);
 }
 
 void Application::Initialize() {
@@ -102,7 +94,7 @@ void Application::Run() {
 
         //render loop
         m_graphicsInstance->BeginDrawFrame(std::make_shared<ProtoCADScene::Scene>(scene), m_guiLayer->GetViewportWindowSize());
-        m_guiLayer->Draw();
+        m_guiLayer->Draw(scene);
         m_graphicsInstance->EndDrawFrame();
 
         //temporary (debugging purposes)

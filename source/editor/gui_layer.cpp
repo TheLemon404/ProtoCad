@@ -32,7 +32,7 @@ namespace ProtoCADGUI {
         ProtoCADCore::Logging::Log("Gui Layer Initialized");
     }
 
-    void GUILayer::Draw() {
+    void GUILayer::Draw(ProtoCADScene::Scene& scene) {
         if (p_graphicsAPIType == OPENGL) {
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -57,6 +57,24 @@ namespace ProtoCADGUI {
                 ImVec2(0, 1),
                 ImVec2(1, 0)
             );
+
+            ImGui::SetItemAllowOverlap();
+
+            ImGui::SetCursorPos(ImGui::GetWindowContentRegionMin());
+            ImGui::BeginGroup();
+            const char* perspectiveLabel = scene.camera.projection_mode == ProtoCADScene::PERSPECTIVE ? "Perspective" : "Orthographic";
+            if (ImGui::Button(perspectiveLabel)) {
+                if (scene.camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
+                    ProtoCADScene::Camera cam = scene.camera;
+                    cam.projection_mode = ProtoCADScene::PERSPECTIVE;
+                    scene.camera = cam;
+                }
+                else if (scene.camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
+                    scene.camera.projection_mode = ProtoCADScene::ORTHOGRAPHIC;
+                }
+            }
+            ImGui::EndGroup();
+            ImGui::SetItemAllowOverlap();
 
             ImGui::EndChild();
         }
