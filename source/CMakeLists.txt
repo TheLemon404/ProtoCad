@@ -35,7 +35,7 @@ SET(OpenCASCADE_LIBS
         TKPrim
 )
 
-target_link_libraries(ProtoCAD PRIVATE glfw glm vulkan-1 ImGui ImGuiBackends glad ImOGuizmo)
+target_link_libraries(ProtoCAD PRIVATE glfw glm vulkan-1 ImGui ImGuiBackends glad ImOGuizmo ImGuizmo)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
     set_property(TARGET ProtoCAD PROPERTY CXX_STANDARD 20)
