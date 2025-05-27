@@ -423,7 +423,7 @@ namespace ProtoCADGraphics {
             else if (scene->camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
                 float orthoWidth = (viewport.x / 1000) * scene->camera.othoZoomFactor;
                 float orthoHeight = (viewport.y / 1000) * scene->camera.othoZoomFactor;
-                projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
+                projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.000001f, 10000.0f);
             }
             m_unlitShaderProgram.UploadUniformMat4("projection", projection);
 

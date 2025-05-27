@@ -8,10 +8,20 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_internal.h"
+#include "../../dependencies/imoguizmo/imoguizmo.hpp"
 #include "../core/logging.h"
 #include "../graphics/opengl/opengl_core.h"
+#include "glm/ext/matrix_clip_space.hpp"
 
 namespace ProtoCADGUI {
+    void GUILayer::InitializeTheme() {
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.TabRounding = 0.0f;
+        style.TabBarTopline = 2.0f;
+
+        ImVec4* colors = ImGui::GetStyle().Colors;
+        colors[ImGuiCol_Tab] = ImVec4(0.f, 0.f, 0.f, 0.f);
+    }
 
     void GUILayer::Initialize(std::shared_ptr<ProtoCADCore::Window> window) {
         p_window = window;
@@ -30,6 +40,8 @@ namespace ProtoCADGUI {
         }
 
         ProtoCADCore::Logging::Log("Gui Layer Initialized");
+
+        InitializeTheme();
     }
 
     void GUILayer::Draw(ProtoCADScene::Scene& scene) {
@@ -73,12 +85,46 @@ namespace ProtoCADGUI {
                     scene.camera.projection_mode = ProtoCADScene::ORTHOGRAPHIC;
                 }
             }
+
+            if (ImGui::Button("Re-Center Camera")) {
+                scene.camera.target = glm::vec3(0,0,0);
+                scene.camera.position = glm::vec3(2,2,2);
+            }
+
+            ImGui::Dummy(ImVec2(0, std::max(20.0f, m_viewportWindowSize.y / 20)));
+
+            if (ImGui::Button("Sketch")) {
+
+            }
+
             ImGui::EndGroup();
             ImGui::SetItemAllowOverlap();
+
+            //orientation guizmo
+            ImOGuizmo::SetRect(m_viewportWindowSize.x - 110, 60, 100.0f);
+            glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), (float)m_viewportWindowSize.y/m_viewportWindowSize.x, 0.001f, 10000.0f);
+            ImOGuizmo::DrawGizmo((float*)&scene.camera.view, (float*)&projection);
 
             ImGui::EndChild();
         }
 
+        ImGui::End();
+
+        //tree
+        ImGuiTreeNodeFlags flag = ImGuiTreeNodeFlags_DefaultOpen;
+        ImGui::Begin("Tree");
+        if (ImGui::TreeNodeEx("Root", flag)) {
+            if (ImGui::TreeNodeEx("Boolean", flag)) {
+                if (ImGui::TreeNodeEx("Box", flag)) {
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNodeEx("Sphere", flag)) {
+                    ImGui::TreePop();
+                }
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
         ImGui::End();
 
         ImGui::Render();

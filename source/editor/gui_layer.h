@@ -37,6 +37,8 @@ namespace ProtoCADGUI {
         //opengl
         glm::vec2 m_viewportWindowSize;
 
+        void InitializeTheme();
+
     public:
         glm::vec2 GetViewportWindowSize() { return m_viewportWindowSize; }
 

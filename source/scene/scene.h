@@ -22,9 +22,11 @@ namespace ProtoCADScene {
         PERSPECTIVE,
         ORTHOGRAPHIC,
     };
+
     struct Camera {
         float othoZoomFactor = 1.0f;
         float fov = 70;
+
         glm::vec3 target;
         glm::vec3 position = {2.0f, 2.0f, 2.0f};
         glm::vec3 rotation;

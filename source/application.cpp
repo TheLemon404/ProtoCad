@@ -46,7 +46,7 @@ void Application::UpdateCameraPosition() {
 
     scene.camera.position += (scene.camera.position - scene.camera.target) * (-ProtoCADCore::Input::mouseScrollVector.y / 20.0f);
     scene.camera.othoZoomFactor += (-ProtoCADCore::Input::mouseScrollVector.y / 10.0f);
-    scene.camera.othoZoomFactor = std::clamp(scene.camera.othoZoomFactor, 0.0001f, 1000000.0f);
+    scene.camera.othoZoomFactor = std::clamp(scene.camera.othoZoomFactor, 0.000001f, 1000000.0f);
 }
 
 void Application::Initialize() {
