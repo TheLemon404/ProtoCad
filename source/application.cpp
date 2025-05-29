@@ -8,6 +8,7 @@
 #include "core/logging.h"
 #include "core/clock.h"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/ext/scalar_constants.hpp"
 
 using ProtoCADCore::Logging;
 
@@ -39,33 +40,23 @@ void Application::UpdateCameraPosition() {
         else {
             scene.camera.RotateAround(-ProtoCADCore::Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), scene.camera.target);
             scene.camera.RotateAround(ProtoCADCore::Input::mouseDelta.y / 500.0f, cameraRight, scene.camera.target);
-            scene.camera.rotation.x = glm::clamp(scene.camera.rotation.x, (float)-std::numbers::pi, (float)std::numbers::pi);
-            scene.camera.rotation.z = glm::clamp(scene.camera.rotation.z, (float)-std::numbers::pi, (float)std::numbers::pi);
+            scene.camera.rotation.x = glm::clamp(scene.camera.rotation.x, -glm::pi<float>(), glm::pi<float>());
+            scene.camera.rotation.z = glm::clamp(scene.camera.rotation.z, -glm::pi<float>(), glm::pi<float>());
         }
     }
 
     scene.camera.position += (scene.camera.position - scene.camera.target) * (-ProtoCADCore::Input::mouseScrollVector.y / 20.0f);
     scene.camera.othoZoomFactor += (-ProtoCADCore::Input::mouseScrollVector.y / 10.0f);
-    scene.camera.othoZoomFactor = std::clamp(scene.camera.othoZoomFactor, 0.000001f, 1000000.0f);
+    scene.camera.othoZoomFactor = glm::clamp(scene.camera.othoZoomFactor, 0.000001f, 1000000.0f);
 }
 
 void Application::Initialize() {
     Logging::Log("initializing application");
 
-    //temporary (debugging purposes)
-    ProtoCADGraphics::Mesh mesh{};
-    mesh.vertices = vertices;
-    mesh.indices = indices;
-    model = {mesh, glm::identity<glm::mat4>()};
-    scene = {};
-
-    ProtoCADGraphics::DefaultQuad quad{};
-
     m_window->Initialize(m_graphicsAPI);
 
-    scene.models.push_back(model);
-    scene.models.push_back({quad, glm::translate(glm::identity<glm::mat4>(), glm::vec3(2, 0, 0))});
-
+    scene = {};
+    scene.volume = {};
     scene.camera = {};
     scene.camera.fov = 80;
 
@@ -84,21 +75,10 @@ void Application::Run() {
         UpdateCameraPosition();
         scene.camera.UpdateMatrices();
 
-        //temporary (debugging purposes)
-        if (ProtoCADCore::Input::keyStates[GLFW_KEY_T] == GLFW_PRESS && model.mesh.vertices[0].color.x == 0.0f) {
-
-            scene.models[0].mesh = ProtoCADGraphics::DefaultQuad{};
-
-            m_graphicsInstance->UpdateMesh( std::make_shared<ProtoCADGraphics::Mesh>(scene.models[0].mesh));
-        }
-
         //render loop
         m_graphicsInstance->BeginDrawFrame(std::make_shared<ProtoCADScene::Scene>(scene), m_guiLayer->GetViewportWindowSize());
         m_guiLayer->Draw(scene);
         m_graphicsInstance->EndDrawFrame();
-
-        //temporary (debugging purposes)
-        scene.models[0].transform = glm::rotate(scene.models[0].transform, (float)ProtoCADCore::Clock::GetDeltaTime(), glm::vec3(0, 0, 1));
 
         ProtoCADCore::Input::Refresh();
     }

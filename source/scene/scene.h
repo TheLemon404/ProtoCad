@@ -7,6 +7,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "../graphics/graphics_objects.h"
 #include "glm/fwd.hpp"
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"
@@ -42,6 +43,7 @@ namespace ProtoCADScene {
     public:
         Camera camera;
 
+        ProtoCADGraphics::Volume volume;
         std::vector<ProtoCADGraphics::Model> models;
 
         void Update();

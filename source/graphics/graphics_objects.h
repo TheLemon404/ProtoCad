@@ -11,6 +11,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
+#include <memory>
 
 #endif //GRAPHICS_OBJECTS_H
 
@@ -53,5 +54,29 @@ namespace ProtoCADGraphics {
                 0, 1, 2, 2, 3, 0
             };
         }
+    };
+
+    struct VoxelData {
+        glm::vec4 color;
+    };
+
+    struct Node {
+        bool isLeaf;
+        std::shared_ptr<Node> children[8];
+        VoxelData data;
+    };
+
+    struct Volume {
+        int width, height, depth;
+
+        Volume(int width = 32, int height = 32, int depth = 32);
+
+        void CreateSphere();
+        void Cube();
+
+        std::vector<glm::vec4> data;
+
+    private:
+        int m_textureID;
     };
 }

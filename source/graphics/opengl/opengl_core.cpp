@@ -157,6 +157,20 @@ namespace ProtoCADGraphics {
         glDeleteTextures(1, &id);
     }
 
+    void Texture3D::Bind() {
+        glBindTexture(GL_TEXTURE_3D, id);
+    }
+
+    void Texture3D::Unbind() {
+        glBindTexture(GL_TEXTURE_3D, 0);
+    }
+
+    void Texture3D::Update(void* data) {
+        Bind();
+        glTexImage3D(GL_TEXTURE_3D, 0,GL_RGBA32F, width, height, depth, 0,GL_RGBA, GL_FLOAT, data);
+        glBindTexture(GL_TEXTURE_3D, 0);
+    }
+
     VAO OpenGLAPI::CreateVAO() {
         VAO vao{};
         glGenVertexArrays(1, &vao.id);
@@ -255,17 +269,36 @@ namespace ProtoCADGraphics {
     }
 
 
-    Texture OpenGLAPI::CreateTexture() {
+    Texture OpenGLAPI::CreateTexture(int width, int height) {
         Texture texture{};
         glGenTextures(1, &texture.id);
         texture.Bind();
 
-        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
-        texture.width = 1024;
-        texture.height = 768;
+        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0,GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        texture.width = width;
+        texture.height = height;
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_POINT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_POINT);
+
+        return texture;
+    }
+
+    Texture3D OpenGLAPI::CreateTexture3D(int width, int height, int depth) {
+        Texture3D texture{};
+        glGenTextures(1, &texture.id);
+        texture.Bind();
+
+        glTexImage3D(GL_TEXTURE_3D, 0,GL_RGBA32F, width, height, depth, 0,GL_RGBA, GL_FLOAT, nullptr);
+        texture.width = width;
+        texture.height = height;
+        texture.depth = depth;
+
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
         return texture;
     }
@@ -360,12 +393,16 @@ namespace ProtoCADGraphics {
         m_screenSpaceVertexShader.Load("./assets/shaders/opengl/screenSpace.vert");
         m_gridVertexShader = CreateShader(VERTEX_SHADER);
         m_gridVertexShader.Load("./assets/shaders/opengl/grid.vert");
+        m_voxelVertexShader = CreateShader(VERTEX_SHADER);
+        m_voxelVertexShader.Load("./assets/shaders/opengl/voxel.vert");
         m_unlitFragmentShader = CreateShader(FRAGMENT_SHADER);
         m_unlitFragmentShader.Load("./assets/shaders/opengl/unlit.frag");
         m_checkeredFragmentShader = CreateShader(FRAGMENT_SHADER);
         m_checkeredFragmentShader.Load("./assets/shaders/opengl/checkers.frag");
         m_gridFragmentShader = CreateShader(FRAGMENT_SHADER);
         m_gridFragmentShader.Load("./assets/shaders/opengl/grid.frag");
+        m_voxelFragmentShader = CreateShader(FRAGMENT_SHADER);
+        m_voxelFragmentShader.Load("./assets/shaders/opengl/voxel.frag");
 
         m_unlitShaderProgram = CreateProgram();
         m_unlitShaderProgram.Load(std::shared_ptr<ShaderObject>(&m_unlitVertexShader), std::shared_ptr<ShaderObject>(&m_unlitFragmentShader));
@@ -373,6 +410,8 @@ namespace ProtoCADGraphics {
         m_checkeredProgram.Load(std::shared_ptr<ShaderObject>(&m_screenSpaceVertexShader), std::shared_ptr<ShaderObject>(&m_checkeredFragmentShader));
         m_gridProgram = CreateProgram();
         m_gridProgram.Load(std::shared_ptr<ShaderObject>(&m_gridVertexShader), std::shared_ptr<ShaderObject>(&m_gridFragmentShader));
+        m_voxelProgram = CreateProgram();
+        m_voxelProgram.Load(std::shared_ptr<ShaderObject>(&m_voxelVertexShader), std::shared_ptr<ShaderObject>(&m_voxelFragmentShader));
 
         for (Model model : scene->models) {
             if (!m_sceneVAOs.contains(model.mesh.id)) {
@@ -397,6 +436,9 @@ namespace ProtoCADGraphics {
                 m_sceneVAOs[model.mesh.id].Unbind();
             }
         }
+
+        m_voxelTexture = CreateTexture3D(scene->volume.width, scene->volume.height, scene->volume.depth);
+        m_voxelTexture.Update(scene->volume.data.data());
     }
 
     void OpenGLAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
@@ -436,6 +478,33 @@ namespace ProtoCADGraphics {
             glUseProgram(0);
         }
 
+        //draw voxels
+        m_voxelProgram.Use();
+
+        m_voxelProgram.UploadUniformVec2("resolution", viewport);
+        m_voxelProgram.UploadUniformMat4("view", scene->camera.view);
+        glm::mat4 projection;
+        if (scene->camera.projection_mode == ProtoCADScene::PERSPECTIVE) {
+            projection = glm::perspective(glm::radians(scene->camera.fov), viewport.x / viewport.y, 0.001f, 10000.0f);
+        }
+        else if (scene->camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {
+            float orthoWidth = (viewport.x / 1000) * scene->camera.othoZoomFactor;
+            float orthoHeight = (viewport.y / 1000) * scene->camera.othoZoomFactor;
+            projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.00001f, 10000.0f);
+        }
+        m_voxelProgram.UploadUniformMat4("projection", projection);
+        m_voxelProgram.UploadUniformVec3("cameraPosition", scene->camera.position);
+        m_voxelProgram.UploadUniformFloat("orthoZoomFactor", scene->camera.othoZoomFactor);
+        m_voxelProgram.UploadUniformInt("isOrtho", scene->camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC ? 1 : 0);
+
+        glBindTexture(GL_TEXTURE_3D, m_voxelTexture.id);
+
+        glBindVertexArray(m_quadVao.id);
+        glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glUseProgram(0);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -469,6 +538,7 @@ namespace ProtoCADGraphics {
         m_unlitShaderProgram.CleanUp();
         m_checkeredProgram.CleanUp();
         m_gridProgram.CleanUp();
+        m_voxelProgram.CleanUp();
     }
 
     void OpenGLAPI::UpdateMesh(std::shared_ptr<Mesh> mesh, MeshUpdateType updateType) {

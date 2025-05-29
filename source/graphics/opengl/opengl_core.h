@@ -82,6 +82,15 @@ namespace ProtoCADGraphics {
         void Delete();
     };
 
+    struct Texture3D : Texture {
+        int depth;
+
+        void Bind();
+        void Unbind();
+
+        void Update(void* data);
+    };
+
     struct FrameBuffer {
         unsigned int id;
 
@@ -148,16 +157,16 @@ namespace ProtoCADGraphics {
         FrameBuffer m_frameBuffer;
         Texture m_renderTexture;
 
-
         FrameBuffer CreateFrameBuffer();
         RenderBuffer CreateRenderBuffer();
 
         void CreateRenderedFrameBuffer();
 
         //textures
-        Texture CreateTexture();
+        Texture CreateTexture(int width = 1024, int height = 1024);
+        Texture3D CreateTexture3D(int width = 1024, int height = 1024, int depth = 1024);
 
-        //background assets
+        //fullscreen quad
         DefaultQuad m_defaultQuad;
         VAO m_quadVao;
         VBO m_quadVbo;
@@ -165,6 +174,7 @@ namespace ProtoCADGraphics {
         VBO m_quadUbo;
         IBO m_quadIbo;
 
+        //shaders
         ShaderObject m_screenSpaceVertexShader;
         ShaderObject m_checkeredFragmentShader;
         ShaderProgram m_checkeredProgram;
@@ -172,6 +182,13 @@ namespace ProtoCADGraphics {
         ShaderObject m_gridVertexShader;
         ShaderObject m_gridFragmentShader;
         ShaderProgram m_gridProgram;
+
+        ShaderObject m_voxelVertexShader;
+        ShaderObject m_voxelFragmentShader;
+        ShaderProgram m_voxelProgram;
+
+        //voxel data
+        Texture3D m_voxelTexture;
 
         void DrawGrid(glm::vec2 viewport, ProtoCADScene::Camera camera);
         void DrawCheckeredBackground(glm::vec2 viewport);

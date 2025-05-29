@@ -91,40 +91,20 @@ namespace ProtoCADGUI {
                 scene.camera.position = glm::vec3(2,2,2);
             }
 
-            ImGui::Dummy(ImVec2(0, std::max(20.0f, m_viewportWindowSize.y / 20)));
-
-            if (ImGui::Button("Sketch")) {
-
-            }
-
             ImGui::EndGroup();
             ImGui::SetItemAllowOverlap();
 
             //orientation guizmo
             ImOGuizmo::SetRect(m_viewportWindowSize.x - 110, 60, 100.0f);
             glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), (float)m_viewportWindowSize.y/m_viewportWindowSize.x, 0.001f, 10000.0f);
-            ImOGuizmo::DrawGizmo((float*)&scene.camera.view, (float*)&projection);
+
+            if (!ImOGuizmo::DrawGizmo((float*)&scene.camera.view, (float*)&projection)){
+                //maybe implement something here later
+            }
 
             ImGui::EndChild();
         }
 
-        ImGui::End();
-
-        //tree
-        ImGuiTreeNodeFlags flag = ImGuiTreeNodeFlags_DefaultOpen;
-        ImGui::Begin("Tree");
-        if (ImGui::TreeNodeEx("Root", flag)) {
-            if (ImGui::TreeNodeEx("Boolean", flag)) {
-                if (ImGui::TreeNodeEx("Box", flag)) {
-                    ImGui::TreePop();
-                }
-                if (ImGui::TreeNodeEx("Sphere", flag)) {
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
-            ImGui::TreePop();
-        }
         ImGui::End();
 
         ImGui::Render();
