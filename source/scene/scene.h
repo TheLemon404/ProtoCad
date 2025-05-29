@@ -33,7 +33,7 @@ namespace ProtoCADScene {
         glm::vec3 rotation;
         glm::vec3 up = {0.0f, 1.0f, 0.0f};
         glm::mat4 view;
-        ProjectionMode projection_mode = ORTHOGRAPHIC;
+        ProjectionMode projection_mode = PERSPECTIVE;
 
         void RotateAround( float angle, glm::vec3 axis, glm::vec3 originPoint);
         void UpdateMatrices();

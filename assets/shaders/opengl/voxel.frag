@@ -26,14 +26,30 @@ vec3 initializeRay()
     return vec3(0);
 }
 
+bool ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
+{
+    float tmin = 0, tmax = 1e30f;
+
+    for(int axis = 0; axis < 3; axis++)
+    {
+        float t1 = (b_min[axis] - ray.origin[axis]) / ray.direction[axis];
+        float t2 = (b_max[axis] - ray.origin[axis]) / ray.direction[axis];
+
+        float dmin = min(t1, t2);
+        float dmax = max(t1, t2);
+
+        tmin = max(dmin, tmin);
+        tmax = min(dmax, tmax);
+    }
+
+    if(tmax >= tmin) return true;
+
+    return false;
+}
+
 vec4 trace(Ray ray)
 {
-    vec3 oc = ray.origin - vec3(0.0f);
-    float a = dot(ray.direction, ray.direction);
-    float b = 2.0 * dot(oc, ray.direction);
-    float c = dot(oc,oc) - 0.5 * 0.5;
-    float discriminant = b*b - 4*a*c;
-    return vec4(discriminant>0);
+    return vec4(ray_aabb(vec3(1), vec3(-1), ray));
 }
 
 void main() {
