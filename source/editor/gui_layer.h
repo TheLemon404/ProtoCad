@@ -9,7 +9,6 @@
 
 #include "imgui_impl_vulkan.h"
 #include "../graphics/graphics_core.h"
-#include "GLFW/glfw3.h"
 #include "imgui_impl_opengl3.h"
 
 #endif //GUI_LAYER_H

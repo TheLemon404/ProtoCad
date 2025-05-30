@@ -4,10 +4,8 @@
 
 #include "gui_layer.h"
 
-#include "gui_window.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
-#include "imgui_internal.h"
 #include "../../dependencies/imoguizmo/imoguizmo.hpp"
 #include "../core/logging.h"
 #include "../graphics/opengl/opengl_core.h"
