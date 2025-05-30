@@ -26,7 +26,7 @@ vec3 initializeRay()
     return vec3(0);
 }
 
-bool ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
+float ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
 {
     float tmin = 0, tmax = 1e30f;
 
@@ -42,14 +42,81 @@ bool ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
         tmax = min(dmax, tmax);
     }
 
-    if(tmax >= tmin) return true;
+    if(tmax >= tmin) return tmin;
 
-    return false;
+    return 1e30f;
+}
+
+vec4 traverseTexture3D(vec3 gridMin, vec3 gridMax, Ray ray)
+{
+    //constants
+    float entry_t = ray_aabb(gridMin, gridMax, ray);
+    int GRID_SIZE = textureSize(voxelTexture, 0).x;
+    int MAX_STEPS = GRID_SIZE * 3;
+    vec3 unit = GRID_SIZE / (gridMax - gridMin);
+
+    if(entry_t == 1e30f) return vec4(0);
+
+    vec3 entryPos = ((ray.origin + ray.direction * (entry_t + 0.0001f)) - gridMin) * unit;
+    vec3 step = vec3(sign(ray.direction.x), sign(ray.direction.y), sign(ray.direction.z));
+    vec3 delta = abs(1.0f/ray.direction);
+
+    //updated every step
+    vec3 pos = clamp(floor(entryPos), 0, GRID_SIZE);
+    vec3 tmax = (pos - entryPos + max(step, 0)) / ray.direction;
+
+    int axis = 0;
+    for (int steps = 0; steps < MAX_STEPS; ++steps)
+    {
+        vec3 voxelCoord = pos / vec3(GRID_SIZE);
+        vec4 voxel = texture(voxelTexture, voxelCoord);
+
+        if(voxel.a != vec4(0))
+        {
+            return voxel;
+        }
+
+        if(tmax.x < tmax.y)
+        {
+            if(tmax.x < tmax.z)
+            {
+                pos.x += step.x;
+                if(pos.x < 0 || pos.x >= GRID_SIZE) break;
+                axis = 0;
+                tmax.x += delta.x;
+            } else
+            {
+                pos.z += step.z;
+                if(pos.z < 0 || pos.z >= GRID_SIZE) break;
+                axis = 2;
+                tmax.z += delta.z;
+            }
+        }
+        else
+        {
+            if(tmax.y < tmax.z)
+            {
+                pos.y += step.y;
+                if (pos.y < 0 || pos.y >= GRID_SIZE) break;
+                axis = 1;
+                tmax.y += delta.y;
+            }
+            else
+            {
+                pos.z += step.z;
+                if (pos.z < 0 || pos.z >= GRID_SIZE) break;
+                axis = 2;
+                tmax.z += delta.z;
+            }
+        }
+    }
+
+    return vec4(0);
 }
 
 vec4 trace(Ray ray)
 {
-    return vec4(ray_aabb(vec3(1), vec3(-1), ray));
+    return traverseTexture3D(-vec3(1), vec3(1), ray);
 }
 
 void main() {
