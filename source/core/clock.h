@@ -25,5 +25,6 @@ namespace ProtoCADCore {
     public:
         static double GetDeltaTime();
         static void Tick();
+        static double GetFPS();
     };
 }

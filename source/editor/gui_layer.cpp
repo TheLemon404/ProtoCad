@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "../../dependencies/imoguizmo/imoguizmo.hpp"
+#include "../core/clock.h"
 #include "../core/logging.h"
 #include "../graphics/opengl/opengl_core.h"
 #include "glm/ext/matrix_clip_space.hpp"
@@ -72,6 +73,23 @@ namespace ProtoCADGUI {
 
             ImGui::SetCursorPos(ImGui::GetWindowContentRegionMin());
             ImGui::BeginGroup();
+
+            ImGui::TextColored(ImVec4(0.2f, 0.4f, 8.0f, 1.0f), "-- DEBUG INFO --");
+            std::string volumeRes = std::string("volume resolution: ") + std::to_string(scene.volume.width) + std::string("x") + std::to_string(scene.volume.width) + std::string("x") + std::to_string(scene.volume.depth);
+            ImGui::Text(volumeRes.c_str());
+
+            // todo -- implement a working fps and reformat this terrible code
+            if (ProtoCADCore::Clock::GetFPS() < 40) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), std::to_string(ProtoCADCore::Clock::GetFPS()).c_str());
+            }
+            else if (ProtoCADCore::Clock::GetFPS() >= 40 && ProtoCADCore::Clock::GetFPS() < 60) {
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), std::to_string(ProtoCADCore::Clock::GetFPS()).c_str());
+            }
+            else if (ProtoCADCore::Clock::GetFPS() >= 60) {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), std::to_string(ProtoCADCore::Clock::GetFPS()).c_str());
+            }
+
+
             const char* perspectiveLabel = scene.camera.projection_mode == ProtoCADScene::PERSPECTIVE ? "Perspective" : "Orthographic";
             if (ImGui::Button(perspectiveLabel)) {
                 if (scene.camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC) {

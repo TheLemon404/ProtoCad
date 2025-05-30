@@ -56,7 +56,7 @@ void Application::Initialize() {
     m_window->Initialize(m_graphicsAPI);
 
     scene = {};
-    scene.volume = {};
+    scene.volume = {128, 128, 128};
     scene.camera = {};
     scene.camera.fov = 80;
 

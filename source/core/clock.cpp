@@ -30,4 +30,8 @@ namespace ProtoCADCore {
             m_t += m_deltaTime;
         }
     }
+
+    double Clock::GetFPS() {
+        return 1/m_deltaTime;
+    }
 }

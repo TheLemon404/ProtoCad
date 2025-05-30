@@ -71,8 +71,8 @@ namespace ProtoCADGraphics {
 
         Volume(int width = 32, int height = 32, int depth = 32);
 
-        void CreateSphere();
-        void Cube();
+        void CreateSphere(float radius);
+        void Fill();
 
         std::vector<glm::vec4> data;
 

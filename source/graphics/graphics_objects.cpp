@@ -10,25 +10,25 @@ namespace ProtoCADGraphics {
     Volume::Volume(int width, int height, int depth) : width(width), height(height), depth(depth){
         data.resize(width * height * depth);
 
-        CreateSphere();
+        CreateSphere(64);
     }
 
-    void Volume::CreateSphere() {
+    void Volume::CreateSphere(float radius) {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < depth; z++) {
-                    if (glm::distance(glm::vec3(x,y,z), glm::vec3(width / 2, height / 2, depth / 2)) < 8) {
+                    if (glm::distance(glm::vec3(x,y,z), glm::vec3(width / 2, height / 2, depth / 2)) < radius) {
                         int index = x * height * depth + y * depth + z;
                         glm::vec3 center = glm::vec3(width / 2, height / 2, depth / 2);
                         glm::vec3 vector = center - glm::vec3(x,y,z);
-                        data[index] = glm::vec4(vector / 8.0f,1.0f);
+                        data[index] = glm::vec4(vector / radius,1.0f);
                     }
                 }
             }
         }
     }
 
-    void Volume::Cube() {
+    void Volume::Fill() {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < depth; z++) {
