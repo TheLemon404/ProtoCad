@@ -56,7 +56,10 @@ void Application::Initialize() {
     m_window->Initialize(m_graphicsAPI);
 
     scene = {};
-    scene.volume = {128, 128, 128};
+    scene.volumes.push_back({128, 128, 128});
+    scene.volumes.push_back({128, 128, 128});
+    scene.volumes[0].CreateSphere(64);
+    scene.volumes[1].Fill();
     scene.camera = {};
     scene.camera.fov = 80;
 

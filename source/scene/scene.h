@@ -43,7 +43,7 @@ namespace ProtoCADScene {
     public:
         Camera camera;
 
-        ProtoCADGraphics::Volume volume;
+        std::vector<ProtoCADGraphics::Volume> volumes;
         std::vector<ProtoCADGraphics::Model> models;
 
         void Update();

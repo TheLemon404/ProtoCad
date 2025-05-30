@@ -188,7 +188,7 @@ namespace ProtoCADGraphics {
         ShaderProgram m_voxelProgram;
 
         //voxel data
-        Texture3D m_voxelTexture;
+        std::vector<Texture3D> m_voxelTextures;
 
         void DrawGrid(glm::vec2 viewport, ProtoCADScene::Camera camera);
         void DrawCheckeredBackground(glm::vec2 viewport);

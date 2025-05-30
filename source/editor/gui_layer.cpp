@@ -75,8 +75,6 @@ namespace ProtoCADGUI {
             ImGui::BeginGroup();
 
             ImGui::TextColored(ImVec4(0.2f, 0.4f, 8.0f, 1.0f), "-- DEBUG INFO --");
-            std::string volumeRes = std::string("volume resolution: ") + std::to_string(scene.volume.width) + std::string("x") + std::to_string(scene.volume.width) + std::string("x") + std::to_string(scene.volume.depth);
-            ImGui::Text(volumeRes.c_str());
 
             // todo -- implement a working fps and reformat this terrible code
             if (ProtoCADCore::Clock::GetFPS() < 40) {

@@ -69,6 +69,9 @@ namespace ProtoCADGraphics {
     struct Volume {
         int width, height, depth;
 
+        glm::vec3 minBounds = glm::vec3(-1);
+        glm::vec3 maxBounds = glm::vec3(1);
+
         Volume(int width = 32, int height = 32, int depth = 32);
 
         void CreateSphere(float radius);

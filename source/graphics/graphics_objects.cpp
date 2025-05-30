@@ -9,8 +9,6 @@
 namespace ProtoCADGraphics {
     Volume::Volume(int width, int height, int depth) : width(width), height(height), depth(depth){
         data.resize(width * height * depth);
-
-        CreateSphere(64);
     }
 
     void Volume::CreateSphere(float radius) {
@@ -33,7 +31,9 @@ namespace ProtoCADGraphics {
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < depth; z++) {
                     int index = x * height * depth + y * depth + z;
-                    data[index] = glm::vec4(x,y,z,1.0f);
+                    glm::vec3 center = glm::vec3(width / 2, height / 2, depth / 2);
+                    glm::vec3 vector = center - glm::vec3(x,y,z);
+                    data[index] = glm::vec4(vector / glm::vec3(width / 2, height / 2, depth / 2),1.0f);
                 }
             }
         }

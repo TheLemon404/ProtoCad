@@ -300,6 +300,8 @@ namespace ProtoCADGraphics {
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+        texture.Unbind();
+
         return texture;
     }
 
@@ -437,8 +439,10 @@ namespace ProtoCADGraphics {
             }
         }
 
-        m_voxelTexture = CreateTexture3D(scene->volume.width, scene->volume.height, scene->volume.depth);
-        m_voxelTexture.Update(scene->volume.data.data());
+        for (Volume volume : scene->volumes) {
+            m_voxelTextures.push_back(CreateTexture3D(volume.width, volume.height, volume.depth));
+            m_voxelTextures[m_voxelTextures.size() - 1].Update(volume.data.data());
+        }
     }
 
     void OpenGLAPI::BeginDrawFrame(std::shared_ptr<ProtoCADScene::Scene> scene, glm::vec2 viewport) {
@@ -478,8 +482,12 @@ namespace ProtoCADGraphics {
             glUseProgram(0);
         }
 
-        //draw voxels
+        //draw volumes
         m_voxelProgram.Use();
+
+        m_voxelProgram.UploadUniformInt("voxelVolume", 0);
+        m_voxelProgram.UploadUniformInt("gasVolume", 1);
+        m_voxelProgram.UploadUniformInt("distortionVolume", 2);
 
         m_voxelProgram.UploadUniformVec2("resolution", viewport);
         m_voxelProgram.UploadUniformMat4("view", scene->camera.view);
@@ -497,7 +505,10 @@ namespace ProtoCADGraphics {
         m_voxelProgram.UploadUniformFloat("orthoZoomFactor", scene->camera.othoZoomFactor);
         m_voxelProgram.UploadUniformInt("isOrtho", scene->camera.projection_mode == ProtoCADScene::ORTHOGRAPHIC ? 1 : 0);
 
-        glBindTexture(GL_TEXTURE_3D, m_voxelTexture.id);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_3D, m_voxelTextures[0].id);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_3D, m_voxelTextures[1].id);
 
         glBindVertexArray(m_quadVao.id);
         glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);

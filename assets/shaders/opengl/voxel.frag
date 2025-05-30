@@ -4,7 +4,10 @@ layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 texCoords;
 
 uniform vec2 resolution;
-uniform sampler3D voxelTexture;
+
+uniform sampler3D voxelVolume;
+uniform sampler3D gasVolume;
+uniform sampler3D distortionVolume;
 
 uniform int isOrtho;
 uniform float orthoZoomFactor;
@@ -47,13 +50,16 @@ float ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
     return 1e30f;
 }
 
-vec4 traverseTexture3D(vec3 gridMin, vec3 gridMax, Ray ray)
+vec4 traverse(Ray ray)
 {
     //constants
-    float entry_t = ray_aabb(gridMin, gridMax, ray);
-    int GRID_SIZE = textureSize(voxelTexture, 0).x;
-    int MAX_STEPS = GRID_SIZE * 3;
-    vec3 unit = GRID_SIZE / (gridMax - gridMin);
+    const vec3 gridMin = vec3(-1);
+    const vec3 gridMax = vec3(1);
+
+    const float entry_t = ray_aabb(gridMin, gridMax, ray);
+    const int GRID_SIZE = 128;
+    const int MAX_STEPS = GRID_SIZE * 3;
+    const vec3 unit = GRID_SIZE / (gridMax - gridMin);
 
     if(entry_t == 1e30f) return vec4(0);
 
@@ -69,11 +75,17 @@ vec4 traverseTexture3D(vec3 gridMin, vec3 gridMax, Ray ray)
     for (int steps = 0; steps < MAX_STEPS; ++steps)
     {
         vec3 voxelCoord = pos / vec3(GRID_SIZE);
-        vec4 voxel = texture(voxelTexture, voxelCoord);
+        vec4 voxel = texture(voxelVolume, voxelCoord);
+        vec4 gas = texture(gasVolume, voxelCoord);
 
-        if(voxel.a != vec4(0))
+        if(voxel.a != 0)
         {
             return voxel;
+        }
+
+        if(gas.a != 0)
+        {
+            return gas;
         }
 
         if(tmax.x < tmax.y)
@@ -114,16 +126,8 @@ vec4 traverseTexture3D(vec3 gridMin, vec3 gridMax, Ray ray)
     return vec4(0);
 }
 
-vec4 trace(Ray ray)
-{
-    return traverseTexture3D(-vec3(1), vec3(1), ray);
-}
-
 void main() {
     vec2 UV = gl_FragCoord.xy / resolution;
-
-    ivec3 voxelCoord = ivec3(gl_FragCoord.xyz);
-    vec3 value = texture(voxelTexture, voxelCoord).xyz;
 
     vec3 rayOrigin;
     vec3 rayDirection;
@@ -155,5 +159,5 @@ void main() {
     Ray ray = {rayOrigin, rayDirection};
 
     //ray traversal
-    outColor = trace(ray);
+    outColor = traverse(ray);
 }
