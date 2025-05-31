@@ -56,10 +56,17 @@ void Application::Initialize() {
     m_window->Initialize(m_graphicsAPI);
 
     scene = {};
-    scene.volumes.push_back({128, 128, 128});
-    scene.volumes.push_back({128, 128, 128});
-    scene.volumes[0].CreateSphere(64);
-    scene.volumes[1].Fill();
+    //physical object volume
+    scene.volumes.push_back({8, 8, 8});
+    scene.volumes[0].CreateSphere(4);
+
+    //gas volume (not yet implemented)
+    scene.volumes.push_back({1, 1, 1});
+
+    //distortion volume
+    scene.volumes.push_back({256, 256, 256});
+    scene.volumes[2].Singularity(glm::vec3(scene.volumes[2].width / 2, scene.volumes[2].height / 2, scene.volumes[2].depth / 2), 1);
+
     scene.camera = {};
     scene.camera.fov = 80;
 

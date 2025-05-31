@@ -63,7 +63,7 @@ vec4 traverse(Ray ray)
 
     if(entry_t == 1e30f) return vec4(0);
 
-    vec3 entryPos = ((ray.origin + ray.direction * (entry_t + 0.0001f)) - gridMin) * unit;
+    vec3 entryPos = ((ray.origin + ray.direction * entry_t) - gridMin) * unit;
     vec3 step = vec3(sign(ray.direction.x), sign(ray.direction.y), sign(ray.direction.z));
     vec3 delta = abs(1.0f/ray.direction);
 
@@ -77,15 +77,24 @@ vec4 traverse(Ray ray)
         vec3 voxelCoord = pos / vec3(GRID_SIZE);
         vec4 voxel = texture(voxelVolume, voxelCoord);
         vec4 gas = texture(gasVolume, voxelCoord);
+        vec4 distortion = texture(distortionVolume, voxelCoord);
 
         if(voxel.a != 0)
         {
             return voxel;
         }
 
-        if(gas.a != 0)
+        if(distortion.a != 0)
         {
-            return gas;
+            ray.direction += distortion.xyz;
+            step = vec3(sign(ray.direction.x), sign(ray.direction.y), sign(ray.direction.z));
+            delta = abs(1.0f/ray.direction);
+        }
+
+        //checking for event horizon
+        if(steps == MAX_STEPS - 1)
+        {
+            return vec4(0,0,0,1.0);
         }
 
         if(tmax.x < tmax.y)

@@ -509,6 +509,8 @@ namespace ProtoCADGraphics {
         glBindTexture(GL_TEXTURE_3D, m_voxelTextures[0].id);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_3D, m_voxelTextures[1].id);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_3D, m_voxelTextures[2].id);
 
         glBindVertexArray(m_quadVao.id);
         glDrawElements(GL_TRIANGLES, m_defaultQuad.indices.size(), GL_UNSIGNED_INT, 0);

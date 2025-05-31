@@ -15,7 +15,7 @@ namespace ProtoCADGraphics {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < depth; z++) {
-                    if (glm::distance(glm::vec3(x,y,z), glm::vec3(width / 2, height / 2, depth / 2)) < radius) {
+                    if (glm::distance(glm::vec3(x,y,z), glm::vec3(0.0)) < radius) {
                         int index = x * height * depth + y * depth + z;
                         glm::vec3 center = glm::vec3(width / 2, height / 2, depth / 2);
                         glm::vec3 vector = center - glm::vec3(x,y,z);
@@ -34,6 +34,19 @@ namespace ProtoCADGraphics {
                     glm::vec3 center = glm::vec3(width / 2, height / 2, depth / 2);
                     glm::vec3 vector = center - glm::vec3(x,y,z);
                     data[index] = glm::vec4(vector / glm::vec3(width / 2, height / 2, depth / 2),1.0f);
+                }
+            }
+        }
+    }
+
+    void Volume::Singularity(glm::vec3 center, float distortionStrength) {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    int index = x * height * depth + y * depth + z;
+                    glm::vec3 vector = glm::normalize(center - glm::vec3(x,y,z));
+                    float inverseSquareLaw = 1.0f / pow(glm::distance(center, glm::vec3(x,y,z)) / distortionStrength, 2);
+                    data[index] = glm::vec4(vector * inverseSquareLaw,1.0f);
                 }
             }
         }
