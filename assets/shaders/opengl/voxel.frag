@@ -20,8 +20,8 @@ layout(location = 0) out vec4 outColor;
 
 struct Ray
 {
-    vec3 origin;
-    vec3 direction;
+    vec3 position;
+    vec3 velocity;
 };
 
 vec3 initializeRay()
@@ -35,8 +35,8 @@ float ray_aabb(vec3 b_min, vec3 b_max, Ray ray)
 
     for(int axis = 0; axis < 3; axis++)
     {
-        float t1 = (b_min[axis] - ray.origin[axis]) / ray.direction[axis];
-        float t2 = (b_max[axis] - ray.origin[axis]) / ray.direction[axis];
+        float t1 = (b_min[axis] - ray.position[axis]) / ray.velocity[axis];
+        float t2 = (b_max[axis] - ray.position[axis]) / ray.velocity[axis];
 
         float dmin = min(t1, t2);
         float dmax = max(t1, t2);
@@ -57,24 +57,26 @@ vec4 traverse(Ray ray)
     const vec3 gridMax = vec3(1);
 
     const float entry_t = ray_aabb(gridMin, gridMax, ray);
-    const int GRID_SIZE = 128;
-    const int MAX_STEPS = GRID_SIZE * 3;
-    const vec3 unit = GRID_SIZE / (gridMax - gridMin);
+    const int GRID_SIZE = textureSize(voxelVolume, 0).x;
+    const int DISTORTION_SIZE = textureSize(distortionVolume, 0).x;
+
+    const int MAX_STEPS = DISTORTION_SIZE * 3;
+    const vec3 unit = DISTORTION_SIZE / (gridMax - gridMin);
 
     if(entry_t == 1e30f) return vec4(0);
 
-    vec3 entryPos = ((ray.origin + ray.direction * entry_t) - gridMin) * unit;
-    vec3 step = vec3(sign(ray.direction.x), sign(ray.direction.y), sign(ray.direction.z));
-    vec3 delta = abs(1.0f/ray.direction);
+    vec3 entryPos = ((ray.position + ray.velocity * entry_t) - gridMin) * unit;
+    vec3 step = vec3(sign(ray.velocity.x), sign(ray.velocity.y), sign(ray.velocity.z));
+    vec3 delta = abs(1.0f/ray.velocity);
 
     //updated every step
-    vec3 pos = clamp(floor(entryPos), 0, GRID_SIZE);
-    vec3 tmax = (pos - entryPos + max(step, 0)) / ray.direction;
+    vec3 pos = clamp(floor(entryPos), 0, DISTORTION_SIZE);
+    vec3 tmax = (pos - entryPos + max(step, 0)) / ray.velocity;
 
     int axis = 0;
     for (int steps = 0; steps < MAX_STEPS; ++steps)
     {
-        vec3 voxelCoord = pos / vec3(GRID_SIZE);
+        vec3 voxelCoord = pos / vec3(DISTORTION_SIZE);
         vec4 voxel = texture(voxelVolume, voxelCoord);
         vec4 gas = texture(gasVolume, voxelCoord);
         vec4 distortion = texture(distortionVolume, voxelCoord);
@@ -86,9 +88,9 @@ vec4 traverse(Ray ray)
 
         if(distortion.a != 0)
         {
-            ray.direction += distortion.xyz;
-            step = vec3(sign(ray.direction.x), sign(ray.direction.y), sign(ray.direction.z));
-            delta = abs(1.0f/ray.direction);
+            ray.velocity += distortion.xyz / DISTORTION_SIZE;
+            step = vec3(sign(ray.velocity.x), sign(ray.velocity.y), sign(ray.velocity.z));
+            delta = abs(1.0f/ray.velocity);
         }
 
         //checking for event horizon
@@ -102,13 +104,13 @@ vec4 traverse(Ray ray)
             if(tmax.x < tmax.z)
             {
                 pos.x += step.x;
-                if(pos.x < 0 || pos.x >= GRID_SIZE) break;
+                if(pos.x < 0 || pos.x >= DISTORTION_SIZE) break;
                 axis = 0;
                 tmax.x += delta.x;
             } else
             {
                 pos.z += step.z;
-                if(pos.z < 0 || pos.z >= GRID_SIZE) break;
+                if(pos.z < 0 || pos.z >= DISTORTION_SIZE) break;
                 axis = 2;
                 tmax.z += delta.z;
             }
@@ -118,14 +120,14 @@ vec4 traverse(Ray ray)
             if(tmax.y < tmax.z)
             {
                 pos.y += step.y;
-                if (pos.y < 0 || pos.y >= GRID_SIZE) break;
+                if (pos.y < 0 || pos.y >= DISTORTION_SIZE) break;
                 axis = 1;
                 tmax.y += delta.y;
             }
             else
             {
                 pos.z += step.z;
-                if (pos.z < 0 || pos.z >= GRID_SIZE) break;
+                if (pos.z < 0 || pos.z >= DISTORTION_SIZE) break;
                 axis = 2;
                 tmax.z += delta.z;
             }

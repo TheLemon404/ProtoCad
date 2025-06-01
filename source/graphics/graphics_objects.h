@@ -75,7 +75,7 @@ namespace ProtoCADGraphics {
         Volume(int width = 32, int height = 32, int depth = 32);
 
         void CreateSphere(float radius);
-        void Fill();
+        void Fill(int w = 32, int h = 32, int d = 32);
         void Singularity(glm::vec3 center, float distortionStrength);
 
         std::vector<glm::vec4> data;

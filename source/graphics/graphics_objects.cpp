@@ -26,10 +26,10 @@ namespace ProtoCADGraphics {
         }
     }
 
-    void Volume::Fill() {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                for (int z = 0; z < depth; z++) {
+    void Volume::Fill(int w, int h, int d) {
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                for (int z = 0; z < d; z++) {
                     int index = x * height * depth + y * depth + z;
                     glm::vec3 center = glm::vec3(width / 2, height / 2, depth / 2);
                     glm::vec3 vector = center - glm::vec3(x,y,z);
@@ -40,12 +40,12 @@ namespace ProtoCADGraphics {
     }
 
     void Volume::Singularity(glm::vec3 center, float distortionStrength) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                for (int z = 0; z < depth; z++) {
+        for (int x = 1; x < width; x++) {
+            for (int y = 1; y < height; y++) {
+                for (int z = 1; z < depth; z++) {
                     int index = x * height * depth + y * depth + z;
-                    glm::vec3 vector = glm::normalize(center - glm::vec3(x,y,z));
-                    float inverseSquareLaw = 1.0f / pow(glm::distance(center, glm::vec3(x,y,z)) / distortionStrength, 2);
+                    glm::vec3 vector = glm::normalize(center - glm::vec3((float)x/(float)width,(float)y/(float)height,(float)z/(float)depth));
+                    float inverseSquareLaw = 1.0f / pow(glm::distance(center, glm::vec3((float)x/(float)width,(float)y/(float)height,(float)z/(float)depth)) / distortionStrength, 2);
                     data[index] = glm::vec4(vector * inverseSquareLaw,1.0f);
                 }
             }
